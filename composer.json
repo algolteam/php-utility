@@ -1,7 +1,7 @@
 {
-    "name": "AlgolTeam/library",
+    "name": "algolteam/library",
     "description": "This is php utilities.",
-    "keywords": ["php", "utility", "telegram", "ftp", "mysql", "language"],
+    "keywords": ["algol", "team", "algol-team", "php", "utility", "telegram", "ftp", "mysql", "language"],
     "type": "library",
     "license": "MIT",
     "autoload": {
