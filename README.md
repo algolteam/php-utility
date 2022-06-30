@@ -15,23 +15,23 @@ Download
 
 From your project directory, run:
 ```
-composer require algol-team/library
+composer require algolteam/library
 ```
 or
 ```
-php composer.phar require algol-team/library
+php composer.phar require algolteam/library
 ```
 Note: If you don't have Composer you can download it [HERE](https://getcomposer.org/download/).
 
 #### Using release archives
 
-https://github.com/algol-team/php-utility/releases
+https://github.com/algolteam/php-utility/releases
 
 #### Using Git
 
 From a project directory, run:
 ```
-git clone https://github.com/algol-team/php-utility.git
+git clone https://github.com/algolteam/php-utility.git
 ```
 
 Installation
@@ -63,11 +63,11 @@ All kinds of contributions are welcome - code, tests, documentation, bug reports
 Contact me
 ------------
 
-You can contact me [via Telegram](https://telegram.me/algol-team) but if you have an issue please [open](https://github.com/algol-team) one.
+You can contact me [via Telegram](https://telegram.me/algolteam) but if you have an issue please [open](https://github.com/algolteam) one.
 
 Support me
 ------------
 
-You can support me using via LiberaPay [![Donate using Liberapay](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/algol-team/donate)
+You can support me using via LiberaPay [![Donate using Liberapay](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/algolteam/donate)
 
-or buy me a beer or two using [Paypal](https://paypal.me/algol-team).
+or buy me a beer or two using [Paypal](https://paypal.me/algolteam).

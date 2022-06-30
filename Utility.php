@@ -1,7 +1,7 @@
 <?php
 /********************************************************************************
- *                       .::ALGOL-TEAM PRODUCTIONS::.                            *
- *    .::Author © 2021 | algol.team.uz@gmail.com | github.com/algol-team::.      *
+ *                     .::ALGOL TEAMWORK PRODUCTIONS::.                          *
+ *        .::Author © 2021 | algolitc@gmail.com | github.com/algolteam::.        *
  *********************************************************************************
  *  Description: This is class for PHP.                                          *
  *  Thanks to specialist: All PHP masters.                                       *
@@ -60,9 +60,9 @@ const CH_NOT_TEXT = "NOT";
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class ALGOL {
@@ -178,9 +178,9 @@ const DTC_HTML = "DTC_HTML";
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class DefaultOf {
@@ -361,9 +361,9 @@ const SFFUD_Password = "SFFUD_Password";
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class StrOf {
@@ -386,7 +386,7 @@ class StrOf {
 
     /**
      * @param $AValue
-     * @param true $ATrim
+     * @param $ATrim
      * @return bool
      */
     public function Empty($AValue, $ATrim = true) {
@@ -821,9 +821,9 @@ class StrOf {
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class ValueOf {
@@ -1035,9 +1035,9 @@ const AO_Chunk = "AO_Chunk";
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class ArrayOf {
@@ -1068,7 +1068,7 @@ class ArrayOf {
 
     /**
      * @param $AValue
-     * @param bool $ASubLength
+     * @param $ASubLength
      * @return bool
      */
     public function Empty($AValue, $ASubLength = false) {
@@ -1554,9 +1554,9 @@ class ArrayOf {
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class DateTimeOf {
@@ -1605,9 +1605,9 @@ const SFI_Curl = "SFI_Curl";
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class SystemOf {
@@ -1682,9 +1682,9 @@ const LNG_Skip = "LNGSkip";
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class LanguageOf {
@@ -1832,9 +1832,9 @@ class LanguageOf {
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class MysqlDbOf extends MysqliDb {
@@ -2239,9 +2239,9 @@ class MysqlDbOf extends MysqliDb {
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class TelegramOf extends Telegram {
@@ -2745,9 +2745,9 @@ class TelegramOf extends Telegram {
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class FtpOf {
@@ -2918,9 +2918,9 @@ class FtpOf {
  *
  * @category  Class
  * @package   Utility
- * @author    AlgolTeam <algol.team.uz@gmail.com>
+ * @author    AlgolTeam <algolitc@gmail.com>
  * @copyright Copyright (c) 2021
- * @link      https://github.com/algol-team
+ * @link      https://github.com/algolteam
  */
 
 class EmbedOf extends Embed {
