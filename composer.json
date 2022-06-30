@@ -1,5 +1,5 @@
 {
-    "name": "algol-team/library",
+    "name": "AlgolTeam/library",
     "description": "This is php utilities.",
     "keywords": ["php", "utility", "telegram", "ftp", "mysql", "language"],
     "type": "library",
@@ -9,8 +9,8 @@
     },
     "authors": [
         {
-            "name": "algol-team",
-            "email": "algol.team.uz@gmail.com"
+            "name": "AlgolTeam",
+            "email": "algolitc@gmail.com"
         }
     ],
     "minimum-stability": "alpha",
