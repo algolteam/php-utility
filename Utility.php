@@ -164,6 +164,10 @@ class ALGOL {
         return new EmbedOf($ACrawler, $AExtractorFactory);
     }
 
+    public static function Html5Of($ADefaultOptions = []) {
+        return new Html5Of($ADefaultOptions);
+    }
+
 }
 
 // Const Get Type Check
@@ -2931,6 +2935,24 @@ class EmbedOf extends Embed {
      */
     public function __construct(Crawler $crawler = null, ExtractorFactory $extractorFactory = null) {
         parent::__construct($crawler, $extractorFactory);
+    }
+
+}
+
+/**
+ * Html5Of
+ *
+ * @category  Class
+ * @package   Utility
+ * @author    AlgolTeam <algolitc@gmail.com>
+ * @copyright Copyright (c) 2021
+ * @link      https://github.com/algolteam
+ */
+
+class Html5Of extends HTML5 {
+
+    public function __construct(array $defaultOptions = array()) {
+        parent::__construct($defaultOptions);
     }
 
 }
