@@ -12,6 +12,7 @@
 use Embed\ExtractorFactory;
 use Embed\Http\Crawler;
 use Embed\Embed;
+use Masterminds\HTML5;
 
 const CH_AND = "&";
 const CH_COMMA = ",";
@@ -164,6 +165,10 @@ class ALGOL {
         return new EmbedOf($ACrawler, $AExtractorFactory);
     }
 
+    /**
+     * @param array|[] $ADefaultOptions
+     * @return Html5Of
+     */
     public static function Html5Of($ADefaultOptions = []) {
         return new Html5Of($ADefaultOptions);
     }
@@ -354,6 +359,7 @@ const SF_WithKeySame = "SF_WithKeySame";
 
 // Const String Replace
 const SR_ArrayKeys = "SR_ArrayKeys";
+const SR_ReplaceMulti = "SR_ReplaceMulti";
 
 // Const Format From User Data
 const SFFUD_FullName = "SFFUD_FullName";
@@ -470,13 +476,14 @@ class StrOf {
      * @param null $AParam
      * @param bool $AFullSearch
      * @param bool $AWord
+     * @param null $APattern
      * @return bool|int
      */
-    public function Found($AValue, $ASubValue, $AStart = 1, $AParam = null, $AFullSearch = false, $AWord = false) {
+    public function Found($AValue, $ASubValue, $AStart = 1, $AParam = null, $AFullSearch = false, $AWord = false, $APattern = null) {
         $FResult = 0;
         $FText = null;
         if ((self::Length($AValue) > 0) and (self::Length($ASubValue) > 0)) {
-            $FSubValue = $ASubValue;
+            if (is_null($APattern)) $FSubValue = $ASubValue; else $FSubValue = self::Replace($APattern, '%s', $ASubValue, SR_ReplaceMulti);
             if ((new ArrayOf)->Length($FSubValue) > 0) {
                 $FSubValue = array_diff(array_unique($FSubValue), [CH_FREE]);
                 if ($AFullSearch) {
@@ -626,6 +633,12 @@ class StrOf {
     public function Replace($AValue, $ASearch, $AReplace, $AParam = null) {
         if (($AParam == SR_ArrayKeys) and is_array($AValue)) {
             $FResult = self::ReplaceExecute3($AValue,  $ASearch, $AReplace);
+        } elseif (($AParam == SR_ReplaceMulti) and is_array($AReplace)) {
+            $FResult = [];
+            foreach ($AReplace as $FReplace) {
+                $FResult = ALGOL::ArrayOf()->Of(AO_Merge, $FResult, self::Replace($AValue, $ASearch, $FReplace));
+            }
+            $FResult = array_unique($FResult);
         } elseif (is_string($AValue) and is_null($AReplace)) {
             if (is_array($ASearch)) $FResult = vsprintf($AValue, $ASearch); else $FResult = sprintf($AValue, $ASearch);
         } else {
@@ -2951,8 +2964,16 @@ class EmbedOf extends Embed {
 
 class Html5Of extends HTML5 {
 
+    /**
+     * @param array|[] $defaultOptions
+     */
     public function __construct(array $defaultOptions = array()) {
         parent::__construct($defaultOptions);
+    }
+
+    public function Count($ASource, $ASearch) {
+        if (file_exists($ASource)) $FSource = self::load($ASource); else $FSource = self::loadHTML($ASource);
+        return ALGOL::StrOf()->Found(self::saveHTML($FSource), $ASearch, 1, SF_GetCount, false, false, ['<%s', '< %s']);
     }
 
 }
