@@ -43,7 +43,20 @@ After downloading by using Composer, you can include Composer's autoloader:
 ```php
 include (__DIR__ . '/vendor/autoload.php');
 
-$Telegram = new TelegramOf('YOUR TELEGRAM TOKEN HERE');
+ALGOL::DefaultOf()->PrintFormat($AValue);
+ALGOL::StrOf()->Length($AValue);
+ALGOL::ValueOf()->Distance($ALatFrom,$ALonFrom,$ALatTo,$ALonTo);
+ALGOL::ArrayOf()->Length($AValue);
+ALGOL::DateTimeOf()->TimeAgo($ADate);
+ALGOL::SystemOf()->FileInfo($AFileName);
+
+ALGOL::LanguageOf($AFileName)->Execute();
+ALGOL::MysqlDbOf()->ConnectOf();
+ALGOL::TelegramOf()->ChatIDOf();
+ALGOL::EmbedOf()->get($url);
+ALGOL::FtpOf()->FileDownload($ARemoteFile,$ALocalFile);
+ALGOL::Html5Of()->Count($ASource,$ASearch);
+ALGOL::FakerOf()->Faker;
 ```
 License
 ------------

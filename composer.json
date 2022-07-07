@@ -21,6 +21,8 @@
         "embed/embed": "*",
         "nyholm/psr7": "*",
         "masterminds/html5": "*",
+        "josantonius/request": "*",
+        "fakerphp/faker": "*",
         "ext-json": "*",
         "ext-ftp": "*",
         "ext-curl": "*"

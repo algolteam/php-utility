@@ -13,6 +13,7 @@ use Embed\ExtractorFactory;
 use Embed\Http\Crawler;
 use Embed\Embed;
 use Masterminds\HTML5;
+use Josantonius\Request\Request;
 
 const CH_AND = "&";
 const CH_COMMA = ",";
@@ -55,6 +56,12 @@ const CH_TRIM = "CH_TRIM";
 const CH_AND_TEXT = "AND";
 const CH_OR_TEXT = "OR";
 const CH_NOT_TEXT = "NOT";
+
+// Const Storage Of Type
+const SOT_Dynamic = "SOT_Dynamic";
+const SOT_File = "SOT_File";
+const SOT_Request = "SOT_Request";
+const SOT_Database = "SOT_Database";
 
 /**
  * ALGOL
@@ -171,6 +178,37 @@ class ALGOL {
      */
     public static function Html5Of($ADefaultOptions = []) {
         return new Html5Of($ADefaultOptions);
+    }
+
+    /**
+     * @param $AType
+     * @param $AOptions
+     * @return StorageOf
+     *
+     * <hr>
+     * <li><u>SOT_Request</u>: <i>post, get, put, delete request method result.</i></li>
+     * <li><u>SOT_Dynamic</u>: <i>session method.</i></li>
+     * <li><u>SOT_File</u>: <i>cookie method.</i></li>
+     * <li><u>SOT_Database</u>: <i>MySQL bases method.</i></li>
+     * <hr>
+     * <li><u>host</u>: <i>database host option.</i></li>
+     * <li><u>username</u>: <i>database username option.</i></li>
+     * <li><u>password</u>: <i>database password option.</i></li>
+     * <li><u>database</u>: <i>database name option.</i></li>
+     * <li><u>timeout</u>: <i>data clear time option.</i></li>
+     * <li><u>security</u>: <i>data security option.</i></li>
+     * <li><u>separator</u>: <i>data get path interval option.</i></li>
+     *
+     */
+    public static function StorageOf($AType = SOT_Request, $AOptions = []) {
+        return new StorageOf($AType, $AOptions);
+    }
+
+    /**
+     * @return FakerOf;
+     */
+    public static function FakerOf() {
+        return new FakerOf();
     }
 
 }
@@ -365,6 +403,11 @@ const SR_ReplaceMulti = "SR_ReplaceMulti";
 const SFFUD_FullName = "SFFUD_FullName";
 const SFFUD_Login = "SFFUD_Login";
 const SFFUD_Password = "SFFUD_Password";
+
+// Const ToSQL Format
+const TSF_Normal = "TSF_Normal";
+const TSF_One = "TSF_One";
+const TSF_JSON = "TSF_JSON";
 
 /**
  * StrOf
@@ -831,6 +874,62 @@ class StrOf {
         return $FResult;
     }
 
+    /**
+     * Mini-wrapper for running MySQL queries with parameter binding with or without PDO
+     * @param $ALink
+     * @param $AQuery
+     * @return mixed
+     */
+    public function ToSQL($ALink, $AQuery, $AParam = null, $AFormat = TSF_Normal) {
+        $FResult = false;
+        if (is_array($AQuery)) {
+            if (is_array($AParam)) {
+                foreach ($AQuery as $FKey => $FValue) {
+                    $FResult = $this->ToSQL($ALink, $FValue, $AParam[$FKey]);
+                }
+            } else {
+                foreach ($AQuery as $FValue) {
+                    $FResult = $this->ToSQL($ALink, $FValue, $AParam);
+                }
+            }
+        } else {
+            $stmt = mysqli_stmt_init($ALink);
+            if ($stmt->prepare($AQuery)) {
+                if (!is_null($AParam)) {
+                    $bind_types = '';
+                    $bind_data = array();
+                    foreach ($AParam as $key => $value) {
+                        $bind_types .= is_numeric($value) ? 'i' : 's';
+                        $bind_data[] = &$AParam[$key];
+                    }
+                    array_unshift($bind_data, $bind_types);
+                    call_user_func_array(array($stmt, 'bind_param'), $bind_data);
+                }
+                if ($stmt->execute()) {
+                    $results = $stmt->get_result();
+                    if ($results) {
+                        if ($results->num_rows > 0) {
+                            if ($AFormat == TSF_One) $FResult = $results->fetch_assoc(); else {
+                                $FResult = [];
+                                if ($AFormat == TSF_JSON) {
+                                    while ($row = $results->fetch_row()) {
+                                        $FResult[$row[0]] = ALGOL::ArrayOf()->FromJSON($row[1]);
+                                    }
+                                } else {
+                                    while ($row = $results->fetch_assoc()) {
+                                        $FResult[] = $row;
+                                    }
+                                }
+                            }
+                        }
+                    } else $FResult = true;
+                    $stmt->close();
+                }
+            }
+        }
+        return $FResult;
+    }
+
 }
 
 /**
@@ -1121,10 +1220,14 @@ class ArrayOf {
 
     /**
      * @param $AValue
+     * @param $AOneMode
      * @return mixed|null
      */
-    public function First($AValue) {
-        return self::Value($AValue, 1, true);
+    public function First($AValue, $AOneMode = false) {
+        if (!$AOneMode) $FResult = self::Value($AValue, 1, true);
+        elseif (is_array($AValue) and (self::Length($AValue) == 1) and isset($AValue[0])) $FResult = $AValue[0];
+        else $FResult = $AValue;
+        return $FResult;
     }
 
     /**
@@ -1282,39 +1385,44 @@ class ArrayOf {
      * @return int
      */
     public function FromString($AValue, $AInterval = CH_SPEC, &$AResult = null, $ALimit = null, $AKeys = null) {
-        $AResult = [];
-        $FResult = 0;
-        $FSubInterval = null;
-        if (isset($AValue)) {
-            if (is_array($AInterval)) {
-                foreach ($AInterval as $FKey => $FValue) {
-                    if ((new DefaultOf)->TypeCheck($FKey)) {
-                        $FInterval = $FValue;
-                        $FSubInterval = null;
+        if (is_array($AValue)) {
+            $AResult = $AValue;
+            $FResult = ALGOL::ArrayOf()->Length($AResult);
+        } else {
+            $AResult = [];
+            $FResult = 0;
+            $FSubInterval = null;
+            if (isset($AValue)) {
+                if (is_array($AInterval)) {
+                    foreach ($AInterval as $FKey => $FValue) {
+                        if ((new DefaultOf)->TypeCheck($FKey)) {
+                            $FInterval = $FValue;
+                            $FSubInterval = null;
+                        } else {
+                            $FInterval = $FKey;
+                            $FSubInterval = $FValue;
+                        }
+                        if ((new StrOf)->Pos($AValue, $FInterval) > 0) $FResult = self::FromString($AValue, $FInterval, $AResult, $ALimit, $AKeys);
+                        if ($FResult > 0) break;
+                    }
+                } elseif ((new StrOf)->Length($AValue) > 0) {
+                    $FValue = (new StrOf)->From($AValue);
+                    if (is_null($AInterval)) {
+                        $FLen = (new StrOf)->Length($FValue);
+                        for ($InX = 1; $InX <= $FLen; $InX++) {
+                            $AResult[$InX] = (new StrOf)->Copy($FValue, $InX, 1);
+                        }
                     } else {
-                        $FInterval = $FKey;
-                        $FSubInterval = $FValue;
+                        if (is_null($ALimit)) $AResult = explode($AInterval, $FValue); else $AResult = explode($AInterval, $FValue, $ALimit);
                     }
-                    if ((new StrOf)->Pos($AValue, $FInterval) > 0) $FResult = self::FromString($AValue, $FInterval, $AResult, $ALimit, $AKeys);
-                    if ($FResult > 0) break;
+                    if (!is_null($AKeys)) $AResult = (new StrOf)->Replace($AResult, null, $AKeys, SR_ArrayKeys);
+                    $FResult = self::Length($AResult);
                 }
-            } elseif ((new StrOf)->Length($AValue) > 0) {
-                $FValue = (new StrOf)->From($AValue);
-                if (is_null($AInterval)) {
-                    $FLen = (new StrOf)->Length($FValue);
-                    for ($InX = 1; $InX <= $FLen; $InX++) {
-                        $AResult[$InX] = (new StrOf)->Copy($FValue, $InX, 1);
-                    }
-                } else {
-                    if (is_null($ALimit)) $AResult = explode($AInterval, $FValue); else $AResult = explode($AInterval, $FValue, $ALimit);
-                }
-                if (!is_null($AKeys)) $AResult = (new StrOf)->Replace($AResult, null, $AKeys, SR_ArrayKeys);
-                $FResult = self::Length($AResult);
             }
-        }
-        if (($FResult > 0) and !is_null($FSubInterval)) {
-            foreach ($AResult as $FKey => $FValue) {
-                if (self::FromString($FValue, $FSubInterval, $ASubResult, $ALimit, $AKeys) > 0) $AResult[$FKey] = $ASubResult;
+            if (($FResult > 0) and !is_null($FSubInterval)) {
+                foreach ($AResult as $FKey => $FValue) {
+                    if (self::FromString($FValue, $FSubInterval, $ASubResult, $ALimit, $AKeys) > 0) $AResult[$FKey] = $ASubResult;
+                }
             }
         }
         return $FResult;
@@ -1336,10 +1444,10 @@ class ArrayOf {
     /**
      * @param $AValue
      * @param false $AParse
-     * @return array|null
+     * @return array|mixed|null
      */
     public function FromJSON($AValue, $AParse = false) {
-        if (!(new StrOf)->Found($AValue, [CH_BRACE_FIGURE_BEGIN, CH_BRACE_FIGURE_END], 1, null, true)) $FResult = [];
+        if (!(new StrOf)->Found($AValue, [CH_BRACE_FIGURE_BEGIN, CH_BRACE_FIGURE_END], 1, null, true)) $FResult = ALGOL::DefaultOf()->ValueFromString($AValue);
         elseif ($AParse === false) {
             if (is_array($AValue)) {
                 $FResult = [];
@@ -1369,7 +1477,7 @@ class ArrayOf {
                 }
             }
         }
-        return $FResult;
+        return self::First($FResult, true);
     }
 
     /**
@@ -1377,19 +1485,20 @@ class ArrayOf {
      * @param bool $ASubJSON
      * @return mixed
      */
-    public function ToJSON($AValue, $ASubJSON = false) {
+    public function ToJSON($AValue, $ASubJSON = false, $AForce = true) {
         $FResult = $AValue;
+        if (!is_array($FResult) and $AForce) $FResult = [$FResult];
         if ($ASubJSON) {
             if (self::Length($FResult) > 0) {
                 foreach($FResult as $FKey => $FValue) {
                     if (is_array($FValue)) {
-                        $FEncode = json_encode($FValue, JSON_UNESCAPED_UNICODE);
+                        $FEncode = json_encode($FValue, JSON_UNESCAPED_UNICODE|JSON_FORCE_OBJECT);
                         if ($FEncode) $FResult[$FKey] = (new StrOf)->Replace($FEncode, [CH_PATH . CH_PATH, CH_PATH . CH_ANTI_PATH], [CH_PATH, CH_ANTI_PATH]); else $FResult[$FKey] = null;
                     }
                 }
-            }
-        } else {
-            $FEncode = json_encode($FResult, JSON_UNESCAPED_UNICODE);
+            } else $FResult = self::ToJSON($FResult);
+        } elseif (is_array($FResult)) {
+            $FEncode = json_encode($FResult, JSON_UNESCAPED_UNICODE|JSON_FORCE_OBJECT);
             if ($FEncode) $FResult = (new StrOf)->Replace($FEncode, [CH_PATH . CH_PATH, CH_PATH . CH_ANTI_PATH], [CH_PATH, CH_ANTI_PATH]); else $FResult = null;
         }
         return $FResult;
@@ -1564,6 +1673,96 @@ class ArrayOf {
         return $FResult;
     }
 
+    /**
+     * @param $AValues
+     * @param $APath
+     * @param $ADefault
+     * @param $ASeparator
+     * @return mixed
+     */
+    public function PathGet($AValues, $APath, $ADefault = null, $ASeparator = CH_POINT) {
+        if (self::FromString($APath, $ASeparator, $FSubResult) > 0) {
+            $FResult = $AValues;
+            foreach($FSubResult as $FKey) {
+                if (!isset($FResult[$FKey])) return $ADefault;
+                $FResult = $FResult[$FKey];
+            }
+        } else $FResult = $AValues;
+        return $FResult;
+    }
+
+    /**
+     * @param $AValues
+     * @param $APath
+     * @param $ANewValue
+     * @param $ASeparator
+     * @return bool
+     */
+    public function PathSet(&$AValues, $APath, $ANewValue, $ASeparator = CH_POINT) {
+        $FValues = $AValues;
+        if (self::FromString($APath, $ASeparator, $FSubResult) > 0) {
+            if (isset($AValues) and !is_array($AValues)) $AValues = [$AValues];
+            $FResult = &$AValues;
+            foreach($FSubResult as $FKey) {
+                $FResult = &$FResult[$FKey];
+            }
+            $FResult = $ANewValue;
+        } else $AValues = $ANewValue;
+        return $FValues != $AValues;
+    }
+
+    /**
+     * @param $AValues
+     * @param $APath
+     * @param $ASeparator
+     * @return bool
+     */
+    public function PathDelete(&$AValues, $APath, $ASeparator = CH_POINT) {
+        $FValues = $AValues;
+        if (self::FromString($APath, $ASeparator, $FSubResult) > 0) {
+            if (isset($AValues) and !is_array($AValues)) $AValues = [$AValues];
+            $FMax = ALGOL::ArrayOf()->Length($FSubResult);
+            while (self::PathDeleteExecute1($AValues, $FSubResult, $FMax)) {
+                array_pop($FSubResult);
+            }
+            if (ALGOL::ArrayOf()->Length($AValues) < 1) $AValues = null;
+        } else $AValues = null;
+        return $FValues != $AValues;
+    }
+
+    private function PathDeleteExecute1(&$AValues, $AKeys, $AMax) {
+        $FCount = ALGOL::ArrayOf()->Length($AKeys);
+        if ($FCount > 0) {
+            $FResult = &$AValues;
+            $i = 0;
+            foreach($AKeys as $FKey) {
+                $i++;
+                if (!isset($FResult[$FKey])) return false;
+                elseif ($i == $FCount) {
+                    if (($AMax == $FCount) or (ALGOL::ArrayOf()->Length($FResult[$FKey]) < 1)) unset($FResult[$FKey]);
+                } else $FResult = &$FResult[$FKey];
+            }
+            return true;
+        } else return false;
+    }
+
+    /**
+     * @param $AValues
+     * @param $APath
+     * @param $ASeparator
+     * @return bool
+     */
+    public function PathExists($AValues, $APath, $ASeparator = CH_POINT) {
+        if (self::FromString($APath, $ASeparator, $FSubResult) > 0) {
+            $FResult = $AValues;
+            foreach ($FSubResult as $FKey) {
+                if (!isset($FResult[$FKey])) return false;
+                $FResult = $FResult[$FKey];
+            }
+            return true;
+        } else return false;
+    }
+
 }
 
 /**
@@ -1616,6 +1815,11 @@ class DateTimeOf {
 
 // Const Get File Info
 const SFI_Curl = "SFI_Curl";
+
+// Const Hash MD5 Type
+const HMT_Number = "HMT_Number";
+const HMT_Char = "HMT_Char";
+const HMT_Default = "HMT_Default";
 
 /**
  * SystemOf
@@ -1684,6 +1888,30 @@ class SystemOf {
         // Clear trimming
         if ((new ArrayOf)->Length($FResult) > 0) return (new StrOf)->Replace($FResult, [CH_NEW_LINE, CH_TRIM], CH_FREE); else return $ADefault;
     }
+
+    /**
+     * @param $AValue
+     * @param $AKey
+     * @param $AType
+     * @param $ALength
+     * @return string
+     */
+    public function HashMD5($AValue, $AKey, $AType = HMT_Default, $ALength = 32) {
+        $FHash = md5(trim($AKey) . trim($AValue) . trim($AKey));
+        if ($AType == HMT_Char) {
+            $FResult = CH_FREE;
+            foreach (str_split($FHash) as $FChar) {
+                if (is_numeric($FChar)) $FResult .= chr((int)$FChar + 97); else $FResult .= $FChar;
+            }
+        } elseif ($AType == HMT_Number) {
+            $FResult = CH_FREE;
+            foreach (str_split($FHash) as $FChar) {
+                if (is_numeric($FChar)) $FResult .= $FChar; else $FResult .= ord($FChar) - 97;
+            }
+        } else $FResult = $FHash;
+        return ALGOL::StrOf()->Copy($FResult, 1, $ALength);
+    }
+
 }
 
 // Const Language
@@ -2965,7 +3193,7 @@ class EmbedOf extends Embed {
 class Html5Of extends HTML5 {
 
     /**
-     * @param array|[] $defaultOptions
+     * @param array $defaultOptions
      */
     public function __construct(array $defaultOptions = array()) {
         parent::__construct($defaultOptions);
@@ -2974,6 +3202,357 @@ class Html5Of extends HTML5 {
     public function Count($ASource, $ASearch) {
         if (file_exists($ASource)) $FSource = self::load($ASource); else $FSource = self::loadHTML($ASource);
         return ALGOL::StrOf()->Found(self::saveHTML($FSource), $ASearch, 1, SF_GetCount, false, false, ['<%s', '< %s']);
+    }
+
+}
+
+// Const Get Arithmetic Operator
+const GAO_Addition = "GAO_Addition";
+const GAO_Subtraction = "GAO_Subtraction";
+const GAO_Multiplication = "GAO_Multiplication";
+const GAO_Division = "GAO_Division";
+const GAO_Modulus = "GAO_Modulus";
+
+/**
+ * StorageOf
+ *
+ * @category  Class
+ * @package   Utility
+ * @author    AlgolTeam <algolitc@gmail.com>
+ * @copyright Copyright (c) 2021
+ * @link      https://github.com/algolteam
+ *
+ */
+
+class StorageOf {
+
+    private $FType;
+    private $FOptions;
+    private $FObject = null;
+    private $FSecurity = null;
+    private $FSeparator = CH_POINT;
+    private $FTableName = 'tstorage';
+    private $FTimeout;
+    private $FSessionName = 'algolteam';
+
+
+    /**
+     * @param $AType
+     * @param $AOptions
+     */
+    public function __construct($AType = SOT_Request, $AOptions = []) {
+        $this->FType = $AType;
+        $this->FOptions = $AOptions;
+        if (isset($this->FOptions['security'])) $this->FSecurity = $this->FOptions['security'];
+        if (isset($this->FOptions['separator'])) $this->FSeparator = $this->FOptions['separator'];
+        self::Open();
+    }
+
+    private function ParseName($AValue, &$AName, &$APath) {
+        $APath = ALGOL::ArrayOf()->FromStringWithArray($AValue, $this->FSeparator);
+        $AName = $APath[0];
+        if (ALGOL::ArrayOf()->Length($APath) > 1) unset($APath[0]); else $APath = null;
+        return ;
+    }
+
+    private function GetHash($AValue) {
+        if (isset($this->FSecurity)) {
+            $FResult = $AValue;
+            switch ($this->FType) {
+                case SOT_Database:
+                    $FResult .= ALGOL::DefaultOf()->ValueCheck($_SERVER['HTTP_USER_AGENT'], CH_FREE) . ALGOL::DefaultOf()->ValueCheck($_SERVER['REMOTE_ADDR'], CH_FREE);
+                    break;
+                case SOT_Dynamic:
+                    $FResult .= ALGOL::DefaultOf()->ValueCheck(session_name(), CH_FREE) . ALGOL::DefaultOf()->ValueCheck(session_id(), CH_FREE);
+                    break;
+            }
+            $FResult = ALGOL::SystemOf()->HashMD5($FResult, $this->FSecurity, HMT_Number);
+        } else $FResult = $AValue;
+        return $FResult;
+    }
+
+    public function isStarted() {
+        $FResult = true;
+        switch ($this->FType) {
+            case SOT_Database:
+                $FResult = ($this->FObject instanceof mysqli) and mysqli_ping($this->FObject);
+                break;
+            case SOT_Dynamic: // session
+                $FResult = session_status() === PHP_SESSION_ACTIVE;
+                break;
+        }
+        return $FResult;
+    }
+
+    private function Open() {
+        $FResult = true;
+        switch ($this->FType) {
+            case SOT_Database:
+                if (isset($this->FObject)) {
+                    mysqli_close($this->FObject);
+                    unset($this->FObject);
+                }
+                $this->FObject = mysqli_connect($this->FOptions['host'], $this->FOptions['username'], $this->FOptions['password'], $this->FOptions['database']);
+                $FResult = (mysqli_errno($this->FObject) == 0) and ALGOL::StrOf()->ToSQL($this->FObject, "CREATE TABLE IF NOT EXISTS `" . $this->FTableName . "` (                    
+	                `fkey` VARCHAR(64) NOT NULL COLLATE 'utf8mb4_unicode_ci',
+	                `fvalue` LONGTEXT NOT NULL COLLATE 'utf8mb4_unicode_ci',
+	                `fexpire` VARCHAR(16) NOT NULL COLLATE 'utf8mb4_unicode_ci',
+	                PRIMARY KEY (`fkey`) USING BTREE)
+                    COLLATE='utf8mb4_unicode_ci'
+                    ENGINE=InnoDB;"); //`id` INT(11) NOT NULL AUTO_INCREMENT,
+                if (isset($this->FOptions['timeout'])) $this->FTimeout = $this->FOptions['timeout']; else $this->FTimeout = 86400 * 365;
+                break;
+            case SOT_Dynamic: // session
+                if (session_id() !== CH_FREE) session_destroy();
+                ini_set('session.cookie_lifetime', 0);
+                ini_set('session.cookie_httponly', 1);
+                ini_set('session.use_only_cookies', 1);
+                ini_set('session.use_strict_mode', 1);
+                ini_set('session.name', $this->FSessionName);
+                ini_set('session.upload_progress.name', $this->FSessionName . '.upload');
+                if (isset($_SERVER['HTTPS']) and ($_SERVER['HTTPS'] == 'on')) ini_set('session.cookie_secure', 1);
+                if (isset($this->FOptions['timeout'])) ini_set('session.gc_maxlifetime', $this->FOptions['timeout']);
+                $this->FTimeout = ini_get('session.gc_maxlifetime');
+                $FResult = session_start();
+                break;
+            case SOT_File:
+                if (isset($this->FOptions['timeout'])) $this->FTimeout = $this->FOptions['timeout']; else $this->FTimeout = 86400 * 30;
+                break;
+        }
+        return $FResult;
+    }
+
+    public function Close() {
+        switch ($this->FType) {
+            case SOT_Database:
+                if (isset($this->FObject)) {
+                    mysqli_close($this->FObject);
+                    unset($this->FObject);
+                }
+                break;
+            case SOT_Dynamic: // session
+                session_destroy();
+                break;
+            case SOT_File:
+            case SOT_Request:
+                self::Clear();
+                break;
+        }
+        return;
+    }
+
+    public function Get($AName, $ADefault = null) {
+        $FResult = $ADefault;
+        if (self::isStarted() and !ALGOL::StrOf()->Empty($AName)) {
+            self::ParseName($AName, $FName, $FPath);
+            switch ($this->FType) {
+                case SOT_Database:
+                    $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "SELECT fvalue FROM " . $this->FTableName . " WHERE fkey = ? and fexpire > ? LIMIT 1", [self::GetHash($FName), time()], TSF_One);
+                    if (isset($FResult['fvalue'])) $FResult = ALGOL::ArrayOf()->FromJSON($FResult['fvalue']); else $FResult = null;
+                    ALGOL::StrOf()->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fexpire < ?;", [time()]);
+                    break;
+                case SOT_Dynamic: // session
+                    $FResult = $_SESSION[self::GetHash($FName)];
+                    break;
+                case SOT_File: // cookie
+                    $FResult = $_COOKIE[self::GetHash($FName)];
+                    if (isset($FResult)) $FResult = ALGOL::ArrayOf()->FromJSON($FResult); else $FResult = null;
+                    break;
+                case SOT_Request:
+                    $FResult = self::All();
+                    if (isset($FResult)) $FResult = $FResult[self::GetHash($FName)];
+                    break;
+            }
+            $FResult = ALGOL::ArrayOf()->PathGet($FResult, $FPath, null, $this->FSeparator);
+        }
+//        $FResult = ALGOL::ArrayOf()->First($FResult, true);
+        return $FResult;
+    }
+
+    public function Put($AName, $ADefault = null) {
+        $FResult = self::Get($AName, $ADefault);
+        self::Delete($AName);
+        return $FResult;
+    }
+
+    public function Set($AName, $AValue) {
+        $FResult = false;
+        if (!ALGOL::StrOf()->Empty([$AName, $AValue])) {
+            self::ParseName($AName, $FName, $FPath);
+            $FResult = self::Get($FName);
+            if (ALGOL::ArrayOf()->PathSet($FResult, $FPath, $AValue, $this->FSeparator)) {
+                switch ($this->FType) {
+                    case SOT_Database:
+                        $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "INSERT INTO " . $this->FTableName . " (fkey, fvalue, fexpire) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE fvalue = VALUES(fvalue), fexpire = VALUES(fexpire);", [self::GetHash($FName), ALGOL::ArrayOf()->ToJSON($FResult), time() + $this->FTimeout]);
+                        ALGOL::StrOf()->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fexpire < ?;", [time()]);
+                        break;
+                    case SOT_Dynamic: // session
+                        $_SESSION[self::GetHash($FName)] = $FResult;
+                        break;
+                    case SOT_File: // cookie
+                        $FResult = setcookie(self::GetHash($FName), ALGOL::ArrayOf()->ToJSON($FResult), time() + $this->FTimeout, CH_ANTI_PATH);
+                        break;
+                    case SOT_Request:
+                        $FResult = false;
+                        break;
+                }
+            } else $FResult = false;
+        }
+        return (bool)$FResult;
+    }
+
+    public function Exists($AName) {
+        return !is_null(self::Get($AName));
+    }
+
+    public function GetArithmetic($AName, $AValue = 1, $AOperator = GAO_Addition) {
+        $FResult = self::Get($AName, 0);
+        switch ($AOperator) {
+            case GAO_Addition:
+                $FResult += $AValue;
+                break;
+            case GAO_Subtraction:
+                $FResult -= $AValue;
+                break;
+            case GAO_Multiplication:
+                $FResult *= $AValue;
+                break;
+            case GAO_Division:
+                $FResult /= $AValue;
+                break;
+            case GAO_Modulus:
+                $FResult %= $AValue;
+                break;
+        }
+        self::Set($AName, $FResult);
+        return $FResult;
+    }
+
+    public function Delete($AName) {
+        $FResult = false;
+        if (self::isStarted() and !ALGOL::StrOf()->Empty($AName)) {
+            self::ParseName($AName, $FName, $FPath);
+            $FResult = self::Get($FName);
+            if (isset($FResult) and (is_null($FPath) or ALGOL::ArrayOf()->PathDelete($FResult, $FPath, $this->FSeparator))) {
+                if (is_null($FPath) or is_null($FResult)) {
+                    switch ($this->FType) {
+                        case SOT_Database:
+                            $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fkey = ?;", [self::GetHash($FName)]);
+                            break;
+                        case SOT_Dynamic: // session
+                            unset($_SESSION[self::GetHash($FName)]);
+                            break;
+                        case SOT_Request:
+                            unset($_COOKIE[self::GetHash($FName)]);
+                            setcookie(self::GetHash($FName), CH_FREE, time() - 3600, CH_ANTI_PATH);
+                            break;
+                        case SOT_File: // cookie
+                            $FResult = false;
+                            break;
+                    }
+                } else $FResult = self::Set($FName, $FResult);
+            } else $FResult = false;
+        }
+        return (bool)$FResult;
+    }
+
+    public function Clear() {
+        $FResult = false;
+        if (self::isStarted()) {
+            switch ($this->FType) {
+                case SOT_Database:
+                    $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "TRUNCATE TABLE " . $this->FTableName . ";");
+                    break;
+                case SOT_Dynamic: // session
+                    $FResult = session_unset();
+                    break;
+                case SOT_File: // cookie
+                    $FResult = $_COOKIE;
+                    if (isset($FResult[$this->FSessionName])) unset($FResult[$this->FSessionName]);
+                    if (count($FResult) > 0) {
+                        foreach ($FResult as $FKey => $FValue) {
+                            setcookie($FKey, CH_FREE, time() - 3600, CH_ANTI_PATH);
+                        }
+                        $FResult = true;
+                    } else $FResult = false;
+                    break;
+                case SOT_Request:
+                    $_GET = [];
+                    $_POST = [];
+                    $FResult = true;
+                    break;
+            }
+        }
+        return (bool)$FResult;
+    }
+
+    public function All($AJSON = false) {
+        $FResult = null;
+        if (self::isStarted()) {
+            switch ($this->FType) {
+                case SOT_Database:
+                    $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "SELECT * FROM " . $this->FTableName . ";", null, TSF_JSON);
+                    break;
+                case SOT_Dynamic: // session
+                    $FResult = $_SESSION;
+                    break;
+                case SOT_File:
+                    $FResult = [];
+                    foreach ($_COOKIE as $FKey => $FValue) {
+                        $FResult[$FKey] = ALGOL::ArrayOf()->FromJSON($FValue);
+                    }
+                    if (isset($FResult[$this->FSessionName])) unset($FResult[$this->FSessionName]);
+                    break;
+                case SOT_Request:
+                    $FValue1 = null;
+                    $FValue2 = null;
+                    $FValue3 = null;
+                    $FValue4 = null;
+                    if (Request::isGet()) {
+                        $FValue1 = Request::input('GET');
+                        $FValue1 = $FValue1()->asArray();
+                    }                    
+                    if (Request::isPost()) {
+                        $FValue2 = Request::input('POST');
+                        $FValue2 = $FValue2()->asArray();
+                    }
+                    if (Request::isPut()) {
+                        $FValue3 = Request::input('PUT');
+                        $FValue3 = $FValue3()->asArray();
+                    }
+                    if (Request::isDelete()) {
+                        $FValue4 = Request::input('DELETE');
+                        $FValue4 = $FValue4()->asArray();
+                    }
+                    $FResult = ALGOL::ArrayOf()->Of(AO_Merge, $FValue1, $FValue2, $FValue3, $FValue4);
+                    if (isset($FResult['_csrf'])) unset($FResult['_csrf']);
+                    break;
+            }
+            if (isset($FResult) and (ALGOL::ArrayOf()->Length($FResult) < 1)) $FResult = null;
+        }
+        if ($AJSON and isset($FResult)) $FResult = ALGOL::ArrayOf()->ToJSON($FResult);
+        return $FResult;
+    }
+
+}
+
+/**
+ * FakerOf
+ *
+ * @category  Class
+ * @package   Utility
+ * @author    AlgolTeam <algolitc@gmail.com>
+ * @copyright Copyright (c) 2021
+ * @link      https://github.com/algolteam
+ *
+ */
+
+class FakerOf {
+
+    public $Faker;
+
+    public function __construct() {
+        $this->Faker = Faker\Factory::create();
     }
 
 }
