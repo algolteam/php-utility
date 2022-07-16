@@ -271,9 +271,9 @@ class DefaultOf {
         if (is_object($FResult)) $FResult = (array) $FResult;
         elseif (is_array($FResult)) {
             foreach ($FResult as $FKey => $FValue) {
-                if (is_array($FValue)) $FResult[$FKey] = self::ValueFromString($FValue, $ADecimal, $AThousand); else $FResult[$FKey] = self::ValueFromStringExecute1($FValue, $ADecimal, $AThousand);
+                if (is_array($FValue)) $FResult[$FKey] = $this->ValueFromString($FValue, $ADecimal, $AThousand); else $FResult[$FKey] = $this->ValueFromStringExecute1($FValue, $ADecimal, $AThousand);
             }
-        } else $FResult = self::ValueFromStringExecute1($FResult, $ADecimal, $AThousand);
+        } else $FResult = $this->ValueFromStringExecute1($FResult, $ADecimal, $AThousand);
         return $FResult;
     }
 
@@ -286,13 +286,13 @@ class DefaultOf {
     private function ValueFromStringExecute1($AValue, $ADecimal = 2, $AThousand = CH_FREE) {
         if (is_string($AValue)) {
             $FValue = (new StrOf)->Replace($AValue, CH_COMMA, CH_POINT);
-            if (self::TypeCheck($AValue)) return intval($AValue);
-            elseif (self::TypeCheck($AValue, FILTER_VALIDATE_FLOAT)) return (float)number_format(floatval($AValue), (new ArrayOf)->First($ADecimal), (new ArrayOf)->Length($ADecimal) > 1 ? (new ArrayOf)->Value($ADecimal, 2) : CH_POINT, $AThousand);
-            elseif (self::TypeCheck($FValue, FILTER_VALIDATE_FLOAT)) return (float)number_format(floatval($FValue), (new ArrayOf)->First($ADecimal), (new ArrayOf)->Length($ADecimal) > 1 ? (new ArrayOf)->Value($ADecimal, 2) : CH_POINT, $AThousand);
+            if ($this->TypeCheck($AValue)) return intval($AValue);
+            elseif ($this->TypeCheck($AValue, FILTER_VALIDATE_FLOAT)) return (float)number_format(floatval($AValue), (new ArrayOf)->First($ADecimal), (new ArrayOf)->Length($ADecimal) > 1 ? (new ArrayOf)->Value($ADecimal, 2) : CH_POINT, $AThousand);
+            elseif ($this->TypeCheck($FValue, FILTER_VALIDATE_FLOAT)) return (float)number_format(floatval($FValue), (new ArrayOf)->First($ADecimal), (new ArrayOf)->Length($ADecimal) > 1 ? (new ArrayOf)->Value($ADecimal, 2) : CH_POINT, $AThousand);
             elseif ((new StrOf)->Same($AValue, "false")) return false;
             elseif ((new StrOf)->Same($AValue, "true")) return true;
             else return $AValue;
-        } elseif (self::TypeCheck($AValue, FILTER_VALIDATE_FLOAT)) return (float)number_format($AValue, (new ArrayOf)->First($ADecimal), (new ArrayOf)->Length($ADecimal) > 1 ? (new ArrayOf)->Value($ADecimal, 2) : CH_POINT, $AThousand); else return $AValue;
+        } elseif ($this->TypeCheck($AValue, FILTER_VALIDATE_FLOAT)) return (float)number_format($AValue, (new ArrayOf)->First($ADecimal), (new ArrayOf)->Length($ADecimal) > 1 ? (new ArrayOf)->Value($ADecimal, 2) : CH_POINT, $AThousand); else return $AValue;
     }
 
     /**
@@ -320,16 +320,16 @@ class DefaultOf {
         $FValue = (new ArrayOf)->First($AValue);
         $FMin = (new ArrayOf)->First($AMin);
         $FMax = (new ArrayOf)->First($AMax);
-        if (!is_null($AMin) and !self::TypeCheck($AMin, DTC_Number)) {
+        if (!is_null($AMin) and !$this->TypeCheck($AMin, DTC_Number)) {
             $FResult = (new StrOf)->Found($AMin, $FValue, 1, SF_SameText);
             $FMin = null;
         }
-        if ($FResult and !is_null($AMax) and !self::TypeCheck($AMax, DTC_Number)) {
+        if ($FResult and !is_null($AMax) and !$this->TypeCheck($AMax, DTC_Number)) {
             $FResult = (new StrOf)->Found($AMax, $FValue, 1, SF_SameText);
             $FMax = null;
         }
-        if ($FResult and (self::TypeCheck($FMin, DTC_Number) or self::TypeCheck($FMax, DTC_Number))) {
-            if (self::TypeCheck($FValue, DTC_Number)) {
+        if ($FResult and ($this->TypeCheck($FMin, DTC_Number) or $this->TypeCheck($FMax, DTC_Number))) {
+            if ($this->TypeCheck($FValue, DTC_Number)) {
                 if (is_null($FMin)) $FResult = ($FValue <= $FMax);
                 elseif (is_null($FMax)) $FResult = ($FMin <= $FValue);
                 else $FResult = (($FMin <= $FMax) and ($FMin <= $FValue) and ($FValue <= $FMax));
@@ -360,7 +360,7 @@ class DefaultOf {
                     return false;
                 } else return date_parse_from_format($FFormats, $FValue)["error_count"] == 0;
             } else return date_parse(trim((new ArrayOf)->First($AValue)))["error_count"] == 0;
-        } elseif ($AType == DTC_TimeOnly) return self::TypeCheck([$AValue, "H:i:s", "H:i"], DTC_DateTime); else {
+        } elseif ($AType == DTC_TimeOnly) return $this->TypeCheck([$AValue, "H:i:s", "H:i"], DTC_DateTime); else {
             if ($AType == DTC_Number) $FType = FILTER_VALIDATE_INT|FILTER_VALIDATE_FLOAT; else $FType = $AType;
             if (filter_var($AValue, $FType) === false) return false; else return true;
         }
@@ -445,10 +445,10 @@ class StrOf {
     public function Empty($AValue, $ATrim = true) {
         if (is_array($AValue)) {
             foreach ($AValue as $FValue) {
-                if (self::Empty($FValue, $ATrim)) return true;
+                if ($this->Empty($FValue, $ATrim)) return true;
             }
             return false;
-        } else return self::Length($AValue, $ATrim) < 1;
+        } else return $this->Length($AValue, $ATrim) < 1;
     }
 
     /**
@@ -470,9 +470,9 @@ class StrOf {
      */
     public function Pos($AValue, $ASubValue, $AStart = 1, $ARepeat = false, $AWord = false) {
         $FResult = 0;
-        if ((self::Length($AValue) > 0) and (self::Length($ASubValue) > 0) and (new DefaultOf)->IntervalCheck($AStart, 1, self::Length($AValue))) {
-            $FResult = self::PosExecute1($AValue, $ASubValue, $AStart - 1, $AWord);
-            if (($FResult == 0) and $ARepeat and ($AStart > 1)) $FResult = self::PosExecute1($AValue, $ASubValue, 0, $AWord);
+        if (($this->Length($AValue) > 0) and ($this->Length($ASubValue) > 0) and (new DefaultOf)->IntervalCheck($AStart, 1, $this->Length($AValue))) {
+            $FResult = $this->PosExecute1($AValue, $ASubValue, $AStart - 1, $AWord);
+            if (($FResult == 0) and $ARepeat and ($AStart > 1)) $FResult = $this->PosExecute1($AValue, $ASubValue, 0, $AWord);
         }
         return $FResult;
     }
@@ -490,12 +490,12 @@ class StrOf {
             $FResult += 1;
             if ($AWord) {
                 $FStart = $FResult;
-                $FFinish = $FResult + self::Length($ASubValue) - 1;
-                $FStartChar = self::Copy($AValue, $FStart - 1, 1);
-                $FFinishChar = self::Copy($AValue, $FFinish + 1, 1);
+                $FFinish = $FResult + $this->Length($ASubValue) - 1;
+                $FStartChar = $this->Copy($AValue, $FStart - 1, 1);
+                $FFinishChar = $this->Copy($AValue, $FFinish + 1, 1);
                 $FPattern = "/^[a-zA-Z\p{Cyrillic}]$/u";
-                if ((($FStart > 1) and (bool)preg_match($FPattern, $FStartChar)) or (($FFinish < self::Length($AValue)) and preg_match($FPattern, $FFinishChar))) $FResult = 0;
-                if (($FResult == 0) and ($FFinish < self::Length($AValue))) $FResult = $this->PosExecute1($AValue, $ASubValue, $FFinish, $AWord);
+                if ((($FStart > 1) and (bool)preg_match($FPattern, $FStartChar)) or (($FFinish < $this->Length($AValue)) and preg_match($FPattern, $FFinishChar))) $FResult = 0;
+                if (($FResult == 0) and ($FFinish < $this->Length($AValue))) $FResult = $this->PosExecute1($AValue, $ASubValue, $FFinish, $AWord);
             }
         }
         return $FResult;
@@ -509,7 +509,7 @@ class StrOf {
      * @return false|int
      */
     public function PosWord($AValue, $ASubValue, $AStart = 1, $ARepeat = false) {
-        return self::Pos($AValue, $ASubValue, $AStart, $ARepeat, true);
+        return $this->Pos($AValue, $ASubValue, $AStart, $ARepeat, true);
     }
 
     /**
@@ -525,19 +525,19 @@ class StrOf {
     public function Found($AValue, $ASubValue, $AStart = 1, $AParam = null, $AFullSearch = false, $AWord = false, $APattern = null) {
         $FResult = 0;
         $FText = null;
-        if ((self::Length($AValue) > 0) and (self::Length($ASubValue) > 0)) {
-            if (is_null($APattern)) $FSubValue = $ASubValue; else $FSubValue = self::Replace($APattern, '%s', $ASubValue, SR_ReplaceMulti);
+        if (($this->Length($AValue) > 0) and ($this->Length($ASubValue) > 0)) {
+            if (is_null($APattern)) $FSubValue = $ASubValue; else $FSubValue = $this->Replace($APattern, '%s', $ASubValue, SR_ReplaceMulti);
             if ((new ArrayOf)->Length($FSubValue) > 0) {
                 $FSubValue = array_diff(array_unique($FSubValue), [CH_FREE]);
                 if ($AFullSearch) {
                     foreach ($FSubValue as $FValue) {
                         $FSubResult = 0;
-                        self::FoundExecute1($AValue, $FValue, $AStart, $AParam, $AWord, $FSubResult, $FText);
+                        $this->FoundExecute1($AValue, $FValue, $AStart, $AParam, $AWord, $FSubResult, $FText);
                         if ($FSubResult == 0) break; else $FResult += $FSubResult;
                     }
                     if (($FResult < (new ArrayOf)->Length($FSubValue)) and ($AParam <> SF_GetCount)) $FResult = 0;
-                } else self::FoundExecute1($AValue, $FSubValue, $AStart, $AParam, $AWord, $FResult, $FText);
-            } else self::FoundExecute1($AValue, $FSubValue, $AStart, $AParam, $AWord, $FResult, $FText);
+                } else $this->FoundExecute1($AValue, $FSubValue, $AStart, $AParam, $AWord, $FResult, $FText);
+            } else $this->FoundExecute1($AValue, $FSubValue, $AStart, $AParam, $AWord, $FResult, $FText);
         }
         if ($AParam == SF_GetCount) return $FResult;
         elseif (in_array($AParam, [SF_GetValue, SF_GetKey, SF_GetKeySame])) return $FText;
@@ -559,7 +559,7 @@ class StrOf {
             if (in_array($AParam, [SF_OnlyKey, SF_OnlyKeySame])) $FSource = array_keys($FSource);
             elseif (in_array($AParam, [SF_WithKey, SF_WithKeySame])) $FSource = array_merge(array_keys($FSource), array_values($FSource));
             foreach ($FSource as $FKey => $FValue) {
-                if (is_array($FValue)) self::FoundExecute1($FValue, $ASearch, $APos, $AParam, $AWord, $AResult, $AText); else self::FoundExecute2($FValue, $ASearch, $APos, $AParam, $AWord, $AResult);
+                if (is_array($FValue)) $this->FoundExecute1($FValue, $ASearch, $APos, $AParam, $AWord, $AResult, $AText); else $this->FoundExecute2($FValue, $ASearch, $APos, $AParam, $AWord, $AResult);
                 if (($AParam <> SF_GetCount) and ($AResult > 0)) {
                     if ($AParam == SF_GetValue) $AText = $FValue;
                     elseif (in_array($AParam, [SF_GetKey, SF_GetKeySame])) $AText = $FKey;
@@ -567,7 +567,7 @@ class StrOf {
                 }
             }
         } else {
-            self::FoundExecute2($FSource, $ASearch, $APos, $AParam, $AWord, $AResult);
+            $this->FoundExecute2($FSource, $ASearch, $APos, $AParam, $AWord, $AResult);
             if (($AParam == SF_GetValue) and ($AResult > 0)) $AText = $FSource;
         }
     }
@@ -583,16 +583,16 @@ class StrOf {
     private function FoundExecute2($ASource, $ASearch, $APos, $AParam, $AWord, &$AResult) {
         if (is_array($ASearch)) {
             foreach ($ASearch as $FValue) {
-                if ($AParam == SF_GetCount) self::FoundExecute3($ASource, $FValue, $APos, $AWord, $AResult); else {
-                    if (in_array($AParam, [SF_SameText, SF_OnlyKeySame, SF_WithKeySame, SF_GetKeySame])) $AResult = self::Same($ASource, $FValue) ? 1 : 0;
-                    elseif ($AParam == SF_FirstText) $AResult = (self::Pos($ASource, $FValue) == 1) ? 1 : 0; else $AResult = (self::Pos($ASource, $FValue, $APos, false, $AWord) > 0) ? 1 : 0;
+                if ($AParam == SF_GetCount) $this->FoundExecute3($ASource, $FValue, $APos, $AWord, $AResult); else {
+                    if (in_array($AParam, [SF_SameText, SF_OnlyKeySame, SF_WithKeySame, SF_GetKeySame])) $AResult = $this->Same($ASource, $FValue) ? 1 : 0;
+                    elseif ($AParam == SF_FirstText) $AResult = ($this->Pos($ASource, $FValue) == 1) ? 1 : 0; else $AResult = ($this->Pos($ASource, $FValue, $APos, false, $AWord) > 0) ? 1 : 0;
                     if ($AResult > 0) break;
                 }
             }
         } else {
-            if ($AParam == SF_GetCount) self::FoundExecute3($ASource, $ASearch, $APos, $AWord, $AResult); else {
-                if (in_array($AParam, [SF_SameText, SF_OnlyKeySame, SF_WithKeySame, SF_GetKeySame])) $AResult = self::Same($ASource, $ASearch) ? 1 : 0;
-                elseif ($AParam == SF_FirstText) $AResult = (self::Pos($ASource, $ASearch) == 1) ? 1 : 0; else $AResult = (self::Pos($ASource, $ASearch, $APos, false, $AWord) > 0) ? 1 : 0;
+            if ($AParam == SF_GetCount) $this->FoundExecute3($ASource, $ASearch, $APos, $AWord, $AResult); else {
+                if (in_array($AParam, [SF_SameText, SF_OnlyKeySame, SF_WithKeySame, SF_GetKeySame])) $AResult = $this->Same($ASource, $ASearch) ? 1 : 0;
+                elseif ($AParam == SF_FirstText) $AResult = ($this->Pos($ASource, $ASearch) == 1) ? 1 : 0; else $AResult = ($this->Pos($ASource, $ASearch, $APos, false, $AWord) > 0) ? 1 : 0;
             }
         }
     }
@@ -605,14 +605,14 @@ class StrOf {
      * @param $AResult
      */
     private function FoundExecute3($ASource, $ASearch, $APos, $AWord, &$AResult) {
-        if ((self::Length($ASource) > 0) and (self::Length($ASearch) > 0)) {
+        if (($this->Length($ASource) > 0) and ($this->Length($ASearch) > 0)) {
             $FSource = $ASource;
-            $FLenSearch = self::Length($ASearch);
-            $FPos = self::Pos($FSource, $ASearch, $APos, false, $AWord);
+            $FLenSearch = $this->Length($ASearch);
+            $FPos = $this->Pos($FSource, $ASearch, $APos, false, $AWord);
             while ($FPos > 0) {
                 $AResult += 1;
-                $FSource = self::Copy($FSource, $FPos + $FLenSearch, self::Length($FSource) - $FPos - $FLenSearch + 1);
-                $FPos = self::Pos($FSource, $ASearch, 1, false, $AWord);
+                $FSource = $this->Copy($FSource, $FPos + $FLenSearch, $this->Length($FSource) - $FPos - $FLenSearch + 1);
+                $FPos = $this->Pos($FSource, $ASearch, 1, false, $AWord);
             }
         }
     }
@@ -628,7 +628,7 @@ class StrOf {
      * @return bool
      */
     public function Same($AValue1, $AValue2, $APercent = 100) {
-        similar_text(self::CharCase($AValue1, MB_CASE_LOWER), self::CharCase($AValue2, MB_CASE_LOWER), $FPercent);
+        similar_text($this->CharCase($AValue1, MB_CASE_LOWER), $this->CharCase($AValue2, MB_CASE_LOWER), $FPercent);
         return ($FPercent >= $APercent);
     }
 
@@ -652,11 +652,11 @@ class StrOf {
      * @return string
      */
     public function Copy($AValue, $AStart, $ALength, $ARight = false, $AContinueFormat = null) {
-        $FLength = self::Length($AValue);
+        $FLength = $this->Length($AValue);
         if (($FLength > 0) and (new DefaultOf)->IntervalCheck($AStart, 1, $FLength) and ($ALength > 0)) {
             if ($ARight) $FStart = $AStart * (-1); else $FStart = $AStart - 1;
-            if (($FLength > $ALength) and (self::Length($AContinueFormat) > 0)) {
-                $FLength = $ALength - self::Length($AContinueFormat);
+            if (($FLength > $ALength) and ($this->Length($AContinueFormat) > 0)) {
+                $FLength = $ALength - $this->Length($AContinueFormat);
                 $FContinueFormat = $AContinueFormat;
             } else {
                 $FLength = $ALength;
@@ -673,30 +673,59 @@ class StrOf {
      * @param null $AParam
      * @return array|string|null
      */
-    public function Replace($AValue, $ASearch, $AReplace, $AParam = null) {
+    public function Replace($AValue, $ASearch, $AReplace, $AParam = null, $APerefix = null) {
+        $FSearch = $ASearch;
+        $FReplace = $AReplace;
+//        if (isset($ASearchPerefix)) {
+//            if (is_array($FSearch)) {
+//                $FNewSearch = [];
+//                if ((new ArrayOf)->Length($FSearch) == (new ArrayOf)->Length($ASearchPerefix)) {
+//                    foreach ($FSearch as $FKey => $FValue) {
+//                        $FNewSearch[$FKey] = $this->Replace($ASearchPerefix[$FKey], '%s', $FValue);
+//                    }
+//                } else {
+//                    $FPrefix = (new ArrayOf)->First($ASearchPerefix);
+//                    foreach ($FSearch as $FKey => $FValue) {
+//                        $FNewSearch[$FKey] = $this->Replace($FPrefix, '%s', $FValue);
+//                    }
+//                }
+//                if (!(new ArrayOf)->Empty($FNewSearch)) {
+//                    if ((new ArrayOf)->Length($FSearch) == (new ArrayOf)->Length($FReplace)) {
+//                        $FReplace = (new ArrayOf)->Of(AO_Merge, $FReplace, $FReplace);
+//                    }
+//                    $FSearch = (new ArrayOf)->Of(AO_Merge, $FNewSearch, $FSearch);
+//                }
+//            } elseif (is_array($ASearchPerefix)) {
+//                $FNewSearch = [];
+//                foreach ($ASearchPerefix as $FKey => $FValue) {
+//                    $FNewSearch[$FKey] = $this->Replace($FValue, '%s', $FSearch);
+//                }
+//                $FSearch = (new ArrayOf)->Of(AO_Merge, $FNewSearch, $FSearch);
+//            } else $FSearch = [$this->Replace($ASearchPerefix, '%s', $FSearch), $FSearch];
+//        }
         if (($AParam == SR_ArrayKeys) and is_array($AValue)) {
-            $FResult = self::ReplaceExecute3($AValue,  $ASearch, $AReplace);
-        } elseif (($AParam == SR_ReplaceMulti) and is_array($AReplace)) {
+            $FResult = $this->ReplaceExecute4($AValue,  $FSearch, $FReplace);
+        } elseif (($AParam == SR_ReplaceMulti) and is_array($FReplace)) {
             $FResult = [];
-            foreach ($AReplace as $FReplace) {
-                $FResult = ALGOL::ArrayOf()->Of(AO_Merge, $FResult, self::Replace($AValue, $ASearch, $FReplace));
+            foreach ($FReplace as $FReplace) {
+                $FResult = (new ArrayOf)->Of(AO_Merge, $FResult, $this->Replace($AValue, $FSearch, $FReplace, null, $APerefix));
             }
             $FResult = array_unique($FResult);
-        } elseif (is_string($AValue) and is_null($AReplace)) {
-            if (is_array($ASearch)) $FResult = vsprintf($AValue, $ASearch); else $FResult = sprintf($AValue, $ASearch);
+        } elseif (is_string($AValue) and is_null($FReplace)) {
+            if (is_array($FSearch)) $FResult = vsprintf($AValue, $FSearch); else $FResult = sprintf($AValue, $FSearch);
         } else {
             $FResult = $AValue;
             if (is_array($FResult)) {
                 foreach ($FResult as $FKey => $FValue) {
                     if (is_array($FValue)) {
-                        $FReplaceValue = self::Replace($FValue, $ASearch, $AReplace);
+                        $FReplaceValue = $this->Replace($FValue, $FSearch, $FReplace, null, $APerefix);
                         if (is_null($FReplaceValue)) unset($FResult[$FKey]); else $FResult[$FKey] = $FReplaceValue;
                     } else {
-                        $FReplaceValue = self::ReplaceExecute1($FValue, $ASearch, $AReplace);
+                        $FReplaceValue = $this->ReplaceExecute1($FValue, $FSearch, $FReplace, $APerefix);
                         if (is_null($FReplaceValue)) unset($FResult[$FKey]); else $FResult[$FKey] = $FReplaceValue;
                     }
                 }
-            } else $FResult = self::ReplaceExecute1($AValue, $ASearch, $AReplace);
+            } else $FResult = $this->ReplaceExecute1($AValue, $FSearch, $FReplace, $APerefix);
         }
         return $FResult;
     }
@@ -707,16 +736,16 @@ class StrOf {
      * @param $AReplace
      * @return string|null
      */
-    private function ReplaceExecute1($AValue, $ASearch, $AReplace) {
-        $FResult = self::From($AValue);
+    private function ReplaceExecute1($AValue, $ASearch, $AReplace, $APerefix) {
+        $FResult = $this->From($AValue);
         if (is_array($ASearch)) {
             foreach ($ASearch as $FKey => $FValue) {
                 if (is_array($AReplace)) {
-                    if (array_key_exists($FKey, $AReplace)) self::ReplaceExecute2($FValue, $AReplace[$FKey], $FResult);
-                } else self::ReplaceExecute2($FValue, $AReplace, $FResult);
+                    if (array_key_exists($FKey, $AReplace)) $this->ReplaceExecute2($FValue, $AReplace[$FKey], $FResult, $APerefix);
+                } else $this->ReplaceExecute2($FValue, $AReplace, $FResult, $APerefix);
                 if (is_null($FResult)) break;
             }
-        } else self::ReplaceExecute2($ASearch, $AReplace, $FResult);
+        } else $this->ReplaceExecute2($ASearch, $AReplace, $FResult, $APerefix);
         return $FResult;
     }
 
@@ -725,22 +754,35 @@ class StrOf {
      * @param $AReplace
      * @param $AResult
      */
-    private function ReplaceExecute2($ASearch, $AReplace, &$AResult) {
+    private function ReplaceExecute2($ASearch, $AReplace, &$AResult, $APerefix) {
         $FReplace = (new ArrayOf)->First($AReplace);
-        if (self::Length($ASearch) > 0) {
-            if (self::Same($ASearch, $AResult)) $AResult = $FReplace;
-            elseif ($ASearch === CH_NEW_LINE) $AResult = preg_replace("/[\n\r]/", $FReplace, $AResult);
+        if ($this->Length($ASearch) > 0) {
+            if ($ASearch === CH_NEW_LINE) $AResult = preg_replace("/[\n\r]/", $FReplace, $AResult);
             elseif ($ASearch === CH_TRIM) $AResult = trim($AResult); else {
-                $FLenSearch = self::Length($ASearch);
-                $FLenReplace = self::Length($FReplace);
-                $FPos = self::Pos($AResult, $ASearch);
-                while ($FPos > 0) {
-                    $AResult = self::Copy($AResult, 1, $FPos - 1) . $FReplace . self::Copy($AResult, $FPos + $FLenSearch, self::Length($AResult) - $FPos - $FLenSearch + 1);
-                    $FPos = self::Pos($AResult, $ASearch, $FPos + $FLenReplace);
-                }
+                if (is_null($APerefix) or !$this->ReplaceExecute3($this->Replace($APerefix, '%s', $ASearch), $FReplace, $AResult)) $this->ReplaceExecute3($ASearch, $FReplace, $AResult);
             }
         }
-        if (is_null($FReplace) and (self::Length($AResult) == 0)) $AResult = null;
+        if (is_null($FReplace) and ($this->Length($AResult) == 0)) $AResult = null;
+    }
+
+    /**
+     * @param $ASearch
+     * @param $AReplace
+     * @param $AResult
+     */
+    private function ReplaceExecute3($ASearch, $AReplace, &$AResult) {
+        $FResult = $this->Same($ASearch, $AResult);
+        if ($FResult) $AResult = $AReplace; else {
+            $FLenSearch = $this->Length($ASearch);
+            $FLenReplace = $this->Length($AReplace);
+            $FPos = $this->Pos($AResult, $ASearch);
+            $FResult = $FPos > 0;
+            while ($FPos > 0) {
+                $AResult = $this->Copy($AResult, 1, $FPos - 1) . $AReplace . $this->Copy($AResult, $FPos + $FLenSearch, $this->Length($AResult) - $FPos - $FLenSearch + 1);
+                $FPos = $this->Pos($AResult, $ASearch, $FPos + $FLenReplace);
+            }
+        }
+        return $FResult;
     }
 
     /**
@@ -749,7 +791,7 @@ class StrOf {
      * @param $AReplace
      * @return array
      */
-    private function ReplaceExecute3($AValue, $ASearch, $AReplace) {
+    private function ReplaceExecute4($AValue, $ASearch, $AReplace) {
         $FResult = $AValue;
         if (is_array($ASearch) and is_array($AReplace)) {
             foreach ($ASearch as $FKey => $FValue) {
@@ -769,9 +811,9 @@ class StrOf {
                     }
                 } elseif ((new DefaultOf)->TypeCheck($AReplace)) $FResult = array_combine(range($AReplace, $AReplace + (new ArrayOf)->Length($FResult) - 1), array_values($FResult));
             } elseif (!is_array($ASearch) and !is_array($AReplace)) {
-                $FKey = self::From($ASearch);
-                $FValue = self::From($AReplace);
-                if ((self::Length($FKey) > 0) and (self::Length($FValue) > 0) and ($FKey <> $FValue) and array_key_exists($FKey, $FResult)) {
+                $FKey = $this->From($ASearch);
+                $FValue = $this->From($AReplace);
+                if (($this->Length($FKey) > 0) and ($this->Length($FValue) > 0) and ($FKey <> $FValue) and array_key_exists($FKey, $FResult)) {
                     $FResult[$FValue] = $FResult[$FKey];
                     unset($FResult[$FKey]);
                 }
@@ -779,7 +821,7 @@ class StrOf {
         }
 
         foreach ($FResult as $FKey => $FValue) {
-            if (is_array($FValue)) $FResult[$FKey] = self::ReplaceExecute3($FValue, $ASearch, $AReplace);
+            if (is_array($FValue)) $FResult[$FKey] = $this->ReplaceExecute4($FValue, $ASearch, $AReplace);
         }
 
         return $FResult;
@@ -796,11 +838,11 @@ class StrOf {
     public function Add($ASource, $AAppend, $ASeparator = ", ", $AIfExs = false, $AInvert = false) {
         if (is_array($AAppend)) {
             $FResult = $ASource;
-            foreach ($AAppend as $FValue) $FResult = self::Add($FResult, $FValue, $ASeparator, $AIfExs, $AInvert);
+            foreach ($AAppend as $FValue) $FResult = $this->Add($FResult, $FValue, $ASeparator, $AIfExs, $AInvert);
             return $FResult;
-        } elseif (self::Length($AAppend, true) == 0) return $ASource;
-        elseif (self::Length($ASource, true) == 0) return $AAppend;
-        elseif (!$AIfExs or (self::Pos($ASource, $AAppend) == 0)) {
+        } elseif ($this->Length($AAppend, true) == 0) return $ASource;
+        elseif ($this->Length($ASource, true) == 0) return $AAppend;
+        elseif (!$AIfExs or ($this->Pos($ASource, $AAppend) == 0)) {
             if ($AInvert) return ($AAppend . $ASeparator . $ASource); else return ($ASource . $ASeparator . $AAppend);
         } else return $ASource;
     }
@@ -811,7 +853,7 @@ class StrOf {
      * @return string
      */
     public function CharCase($AValue, $AParam = MB_CASE_TITLE) {
-        if (is_null($AParam)) return self::From($AValue); else return mb_convert_case($AValue, $AParam, "UTF-8");
+        if (is_null($AParam)) return $this->From($AValue); else return mb_convert_case($AValue, $AParam, "UTF-8");
     }
 
     /**
@@ -831,8 +873,8 @@ class StrOf {
                     $FFirstName = trim((new ArrayOf)->Value($FSubResult));
                     $FLastName = trim((new ArrayOf)->Value($FSubResult, 2));
                     if ((preg_match($FPatternLatin, $FFirstName) and preg_match($FPatternLatin, $FLastName)) or (preg_match($FPatternCyril, $FFirstName) and preg_match($FPatternCyril, $FLastName))) {
-                        $FFirstName = self::CharCase($FFirstName);
-                        $FLastName = self::CharCase($FLastName);
+                        $FFirstName = $this->CharCase($FFirstName);
+                        $FLastName = $this->CharCase($FLastName);
                         $AResult = $FFirstName . CH_SPACE . $FLastName;
                         $FResult = true;
                     }
@@ -857,7 +899,7 @@ class StrOf {
      */
     public function ToFile($AFileName, $AValue, $ANewLine = false) {
         $FResult = false;
-        if ((self::Length($AFileName) > 0) and (self::Length($AValue) > 0)) {
+        if (($this->Length($AFileName) > 0) and ($this->Length($AValue) > 0)) {
             try {
                 $FFile = fopen($AFileName, 'a+');
                 if ($FFile) {
@@ -913,7 +955,7 @@ class StrOf {
                                 $FResult = [];
                                 if ($AFormat == TSF_JSON) {
                                     while ($row = $results->fetch_row()) {
-                                        $FResult[$row[0]] = ALGOL::ArrayOf()->FromJSON($row[1]);
+                                        $FResult[$row[0]] = (new ArrayOf)->FromJSON($row[1]);
                                     }
                                 } else {
                                     while ($row = $results->fetch_assoc()) {
@@ -980,11 +1022,11 @@ class ValueOf {
         $FStartTime = $AStartTime;
         $FFinishTime = $AFinishTime;
         if ((new DefaultOf)->TypeCheck($FStartTime, DTC_DateTime) and (new DefaultOf)->TypeCheck($FFinishTime, DTC_DateTime)) {
-            if ((new DefaultOf)->TypeCheck($FStartTime, DTC_TimeOnly) and !(new DefaultOf)->TypeCheck($FFinishTime, DTC_TimeOnly)) $FFinishTime = self::DateTimeConvertFormat($FFinishTime, "H:i:s");
-            elseif (!(new DefaultOf)->TypeCheck($FStartTime, DTC_TimeOnly) and (new DefaultOf)->TypeCheck($FFinishTime, DTC_TimeOnly)) $FStartTime = self::DateTimeConvertFormat($FStartTime, "H:i:s");
+            if ((new DefaultOf)->TypeCheck($FStartTime, DTC_TimeOnly) and !(new DefaultOf)->TypeCheck($FFinishTime, DTC_TimeOnly)) $FFinishTime = $this->DateTimeConvertFormat($FFinishTime, "H:i:s");
+            elseif (!(new DefaultOf)->TypeCheck($FStartTime, DTC_TimeOnly) and (new DefaultOf)->TypeCheck($FFinishTime, DTC_TimeOnly)) $FStartTime = $this->DateTimeConvertFormat($FStartTime, "H:i:s");
             if ((new DefaultOf)->TypeCheck($FStartTime, DTC_TimeOnly) and (new DefaultOf)->TypeCheck($FFinishTime, DTC_TimeOnly) and (strtotime($FStartTime) > strtotime($FFinishTime))) {
-                $FStartTime = self::DateTimeConvertFormat($FStartTime, "01.01.2000 H:i:s");
-                $FFinishTime = self::DateTimeConvertFormat($FFinishTime, "02.01.2000 H:i:s");
+                $FStartTime = $this->DateTimeConvertFormat($FStartTime, "01.01.2000 H:i:s");
+                $FFinishTime = $this->DateTimeConvertFormat($FFinishTime, "02.01.2000 H:i:s");
             }
             if (strtotime($FStartTime) < strtotime($FFinishTime)) {
                 $FStartTime = date_create($FStartTime);
@@ -1016,8 +1058,8 @@ class ValueOf {
                         $FFormat = "[Minute]" . CH_SPACE . $AFormat["Minute"];
                         if ($FInterval->s > 0) $FFormat = (new StrOf)->Add($FFormat, "[Second]" . CH_SPACE . $AFormat["Second"]);
                     } elseif ($FInterval->s > 0) $FFormat = "[Second]" . CH_SPACE . $AFormat["Second"];
-                    if (isset($FFormat)) self::DateTimePeriodExecute1($FInterval, $FFormat, $FResult);
-                } else self::DateTimePeriodExecute1($FInterval, $AFormat, $FResult);
+                    if (isset($FFormat)) $this->DateTimePeriodExecute1($FInterval, $FFormat, $FResult);
+                } else $this->DateTimePeriodExecute1($FInterval, $AFormat, $FResult);
             }
         }
         return $FResult;
@@ -1054,12 +1096,12 @@ class ValueOf {
     public function DateTimeIntervalCheck($AValue, $AStartTime, $AFinishTime, $AWeekDay = null) {
         if (is_null($AStartTime) and is_null($AFinishTime)) return true; else {
             $FTimeStyle = ((new DefaultOf)->TypeCheck($AStartTime, DTC_TimeOnly) or (new DefaultOf)->TypeCheck($AFinishTime, DTC_TimeOnly));
-            if ($FTimeStyle) $FValue = self::DateTimeConvertFormat($AValue, "H:i:s"); else $FValue = $AValue;
+            if ($FTimeStyle) $FValue = $this->DateTimeConvertFormat($AValue, "H:i:s"); else $FValue = $AValue;
             if (is_null($AStartTime)) $FResult = (strtotime($FValue) <= strtotime($AFinishTime));
             elseif (is_null($AFinishTime)) $FResult = (strtotime($AStartTime) <= strtotime($FValue));
             elseif ($FTimeStyle and (strtotime($AStartTime) > strtotime($AFinishTime))) $FResult = ((new DefaultOf)->IntervalCheck(strtotime($FValue), strtotime($AStartTime), strtotime("23:59:59")) or (new DefaultOf)->IntervalCheck(strtotime($FValue), strtotime("00:00:00"), strtotime($AFinishTime)));
             else $FResult = (new DefaultOf)->IntervalCheck(strtotime($FValue), strtotime($AStartTime), strtotime($AFinishTime));
-            if ($FResult and !is_null($AWeekDay)) $FResult = (new StrOf)->Pos($AWeekDay, self::DateTimeConvertFormat($AValue, "N")) > 0;
+            if ($FResult and !is_null($AWeekDay)) $FResult = (new StrOf)->Pos($AWeekDay, $this->DateTimeConvertFormat($AValue, "N")) > 0;
             return $FResult;
         }
     }
@@ -1146,6 +1188,12 @@ const AO_Cut = "AO_Cut";
 const AO_GetKeyAll = "AO_GetKeyAll";
 const AO_Chunk = "AO_Chunk";
 
+// Const Get Array Of
+const AA_Trim = "AA_Trim";
+const AA_ToValue = "AA_ToValue";
+const AA_ToArray = "AA_ToArray";
+const AA_Ternary = "AA_Ternary";
+
 /**
  * ArrayOf
  *
@@ -1166,7 +1214,7 @@ class ArrayOf {
     public function Length($AValue, $ASubLength = false) {
         $FResult = 0;
         if (is_array($AValue)) {
-            if ($ASubLength) self::LengthExecute1($AValue, $FResult); else $FResult = count($AValue);
+            if ($ASubLength) $this->LengthExecute1($AValue, $FResult); else $FResult = count($AValue);
         }
         return $FResult;
     }
@@ -1177,7 +1225,7 @@ class ArrayOf {
      */
     private function LengthExecute1($AValue, &$AResult) {
         foreach ($AValue as $FValue) {
-            if (is_array($FValue)) self::LengthExecute1($FValue, $AResult);
+            if (is_array($FValue)) $this->LengthExecute1($FValue, $AResult);
             elseif (!is_null($FValue)) $AResult += 1;
         }
     }
@@ -1188,7 +1236,7 @@ class ArrayOf {
      * @return bool
      */
     public function Empty($AValue, $ASubLength = false) {
-        return self::Length($AValue, $ASubLength) < 1;
+        return $this->Length($AValue, $ASubLength) < 1;
     }
 
     /**
@@ -1200,7 +1248,7 @@ class ArrayOf {
     public function Value($AValue, $ANumber = 1, $ASubValue = false) {
         $FResult = null;
         if (is_array($AValue)) {
-            $FCount = self::Length($AValue);
+            $FCount = $this->Length($AValue);
             if (($FCount > 0) and (new DefaultOf)->IntervalCheck($ANumber, 1, $FCount)) {
                 if (array_key_exists($ANumber - 1, $AValue)) $FResult = $AValue[$ANumber - 1]; else {
                     $FIndex = 0;
@@ -1212,7 +1260,7 @@ class ArrayOf {
                         }
                     }
                 }
-                if ($ASubValue and is_array($FResult)) $FResult = self::Value($FResult, $ANumber, $ASubValue);
+                if ($ASubValue and is_array($FResult)) $FResult = $this->Value($FResult, $ANumber, $ASubValue);
             }
         } elseif ($ANumber == 1) $FResult = $AValue;
         return $FResult;
@@ -1224,8 +1272,8 @@ class ArrayOf {
      * @return mixed|null
      */
     public function First($AValue, $AOneMode = false) {
-        if (!$AOneMode) $FResult = self::Value($AValue, 1, true);
-        elseif (is_array($AValue) and (self::Length($AValue) == 1) and isset($AValue[0])) $FResult = $AValue[0];
+        if (!$AOneMode) $FResult = $this->Value($AValue, 1, true);
+        elseif (is_array($AValue) and ($this->Length($AValue) == 1) and isset($AValue[0])) $FResult = $AValue[0];
         else $FResult = $AValue;
         return $FResult;
     }
@@ -1244,23 +1292,23 @@ class ArrayOf {
             if ($FFile) {
                 if (is_null($AInterval)) {
                     while (!feof($FFile)) {
-                        self::FromFileExecute1(fgets($FFile), $AKey, $AResult);
+                        $this->FromFileExecute1(fgets($FFile), $AKey, $AResult);
                     }
                 } else {
                     $FValue = null;
                     while (!feof($FFile)) {
                         $FChar = fgetc($FFile);
                         if ((new StrOf)->Found($AInterval, $FChar, 1, SF_SameText)) {
-                            self::FromFileExecute1($FValue, $AKey, $AResult);
+                            $this->FromFileExecute1($FValue, $AKey, $AResult);
                             $FValue = null;
                         } else $FValue .= $FChar;
                     }
-                    self::FromFileExecute1($FValue, $AKey, $AResult);
+                    $this->FromFileExecute1($FValue, $AKey, $AResult);
                 }
                 fclose($FFile);
             }
         }
-        return self::Length($AResult);
+        return $this->Length($AResult);
     }
 
     /**
@@ -1271,7 +1319,7 @@ class ArrayOf {
     private function FromFileExecute1($AText, $AKey, &$AResult) {
         $FText = trim((new StrOf)->From($AText));
         if ((new StrOf)->Length($FText) > 0) {
-            if (!is_null($AKey) and (self::FromString($FText, $AKey, $FResult, 2) > 1)) $AResult[self::Value($FResult)] = self::Value($FResult, 2); else array_push($AResult, $FText);
+            if (!is_null($AKey) and ($this->FromString($FText, $AKey, $FResult, 2) > 1)) $AResult[$this->Value($FResult)] = $this->Value($FResult, 2); else array_push($AResult, $FText);
         }
     }
 
@@ -1303,12 +1351,12 @@ class ArrayOf {
                         $FValues = func_get_arg(2);
                     }
                     // Execute
-                    if (self::Length($FNames) > 0) {
+                    if ($this->Length($FNames) > 0) {
                         if (!is_array($FValues)) $FValues = [$FValues];
                         foreach ($FNames as $FKey => $FValue) {
-                            if (array_key_exists($FKey, $FValues)) $FResult[self::First($FValue)] = $FValues[$FKey];
+                            if (array_key_exists($FKey, $FValues)) $FResult[$this->First($FValue)] = $FValues[$FKey];
                         }
-                    } else $FResult[self::First($FNames)] = $FValues;
+                    } else $FResult[$this->First($FNames)] = $FValues;
                 }
                 break;
             case AO_Merge:
@@ -1339,13 +1387,13 @@ class ArrayOf {
                     if (is_array($FParam1) and (new DefaultOf)->TypeCheck($FParam2)) {
                         if ($FParam2 >= 0) $FParam2 -= 1;
                         $FResult = array_slice($FParam1, $FParam2, $FParam3, $FParam4);
-                        if ($FParam3 == 1) $FResult = self::Value($FResult);
+                        if ($FParam3 == 1) $FResult = $this->Value($FResult);
                     }
                 }
                 break;
             case AO_GetKeyAll:
                 foreach ($AValues as $FValue) {
-                    if (self::Length($FValue) > 0) {
+                    if ($this->Length($FValue) > 0) {
                         foreach ($FValue as $FSubKey => $FSubValue) {
                             if ((new DefaultOf)->TypeCheck($FSubKey)) $FParam1 = $FSubValue; else $FParam1 = $FSubKey;
                             if ((new StrOf)->Length($FParam1) > 0) {
@@ -1363,10 +1411,10 @@ class ArrayOf {
                     if ($FCountArg > 2) $FParam3 = func_get_arg(3); else $FParam3 = false;
                     // Execute
                     if (is_array($FParam1) and ($FParam2 > 0)) $FResult = array_chunk($FParam1, $FParam2);
-                    if ($FParam3 and (self::Length($FResult) > 0)) {
-                        $FLast = $FResult[self::Length($FResult) - 1];
-                        if (self::Length($FLast) <> $FParam2) {
-                            unset($FResult[self::Length($FResult) - 1]);
+                    if ($FParam3 and ($this->Length($FResult) > 0)) {
+                        $FLast = $FResult[$this->Length($FResult) - 1];
+                        if ($this->Length($FLast) <> $FParam2) {
+                            unset($FResult[$this->Length($FResult) - 1]);
                             $FResult = array_merge($FResult, $FLast);
                         }
                     }
@@ -1387,7 +1435,7 @@ class ArrayOf {
     public function FromString($AValue, $AInterval = CH_SPEC, &$AResult = null, $ALimit = null, $AKeys = null) {
         if (is_array($AValue)) {
             $AResult = $AValue;
-            $FResult = ALGOL::ArrayOf()->Length($AResult);
+            $FResult = (new ArrayOf)->Length($AResult);
         } else {
             $AResult = [];
             $FResult = 0;
@@ -1402,7 +1450,7 @@ class ArrayOf {
                             $FInterval = $FKey;
                             $FSubInterval = $FValue;
                         }
-                        if ((new StrOf)->Pos($AValue, $FInterval) > 0) $FResult = self::FromString($AValue, $FInterval, $AResult, $ALimit, $AKeys);
+                        if ((new StrOf)->Pos($AValue, $FInterval) > 0) $FResult = $this->FromString($AValue, $FInterval, $AResult, $ALimit, $AKeys);
                         if ($FResult > 0) break;
                     }
                 } elseif ((new StrOf)->Length($AValue) > 0) {
@@ -1416,12 +1464,12 @@ class ArrayOf {
                         if (is_null($ALimit)) $AResult = explode($AInterval, $FValue); else $AResult = explode($AInterval, $FValue, $ALimit);
                     }
                     if (!is_null($AKeys)) $AResult = (new StrOf)->Replace($AResult, null, $AKeys, SR_ArrayKeys);
-                    $FResult = self::Length($AResult);
+                    $FResult = $this->Length($AResult);
                 }
             }
             if (($FResult > 0) and !is_null($FSubInterval)) {
                 foreach ($AResult as $FKey => $FValue) {
-                    if (self::FromString($FValue, $FSubInterval, $ASubResult, $ALimit, $AKeys) > 0) $AResult[$FKey] = $ASubResult;
+                    if ($this->FromString($FValue, $FSubInterval, $ASubResult, $ALimit, $AKeys) > 0) $AResult[$FKey] = $ASubResult;
                 }
             }
         }
@@ -1437,7 +1485,7 @@ class ArrayOf {
      */
     public function FromStringWithArray($AValue, $AInterval = CH_SPEC, $ALimit = null, $AKeys = null) {
         $FResult = [];
-        self::FromString($AValue, $AInterval, $FResult, $ALimit, $AKeys);
+        $this->FromString($AValue, $AInterval, $FResult, $ALimit, $AKeys);
         return $FResult;
     }
 
@@ -1447,37 +1495,37 @@ class ArrayOf {
      * @return array|mixed|null
      */
     public function FromJSON($AValue, $AParse = false) {
-        if (!(new StrOf)->Found($AValue, [CH_BRACE_FIGURE_BEGIN, CH_BRACE_FIGURE_END], 1, null, true)) $FResult = ALGOL::DefaultOf()->ValueFromString($AValue);
+        if (!(new StrOf)->Found($AValue, [CH_BRACE_FIGURE_BEGIN, CH_BRACE_FIGURE_END], 1, null, true)) $FResult = (new DefaultOf)->ValueFromString($AValue);
         elseif ($AParse === false) {
             if (is_array($AValue)) {
                 $FResult = [];
                 foreach ($AValue as $FKey => $FValue) {
-                    $FResult[$FKey] = self::FromJSON($FValue);
+                    $FResult[$FKey] = $this->FromJSON($FValue);
                 }
             } else $FResult = json_decode((new StrOf)->Replace($AValue, CH_PATH, CH_PATH . CH_PATH), JSON_OBJECT_AS_ARRAY);
         } else {
             $FResult = [];
-            $FParseKeys = self::Of(AO_GetKeyAll, $AParse);
+            $FParseKeys = $this->Of(AO_GetKeyAll, $AParse);
             if (is_array($AValue)) {
                 foreach ($AValue as $FKey => $FValue) {
                     if ((new StrOf)->Found($FParseKeys, $FKey, 1, SF_SameText)) {
-                        if (isset($AParse[$FKey])) $FResult = array_merge($FResult, self::FromJSON($FValue, $AParse[$FKey])); else $FResult = array_merge($FResult, self::FromJSON($FValue, null));
-                    } elseif (is_array($FValue)) $FResult[$FKey] = self::FromJSON($FValue, $AParse); else $FResult[$FKey] = $FValue;
+                        if (isset($AParse[$FKey])) $FResult = array_merge($FResult, $this->FromJSON($FValue, $AParse[$FKey])); else $FResult = array_merge($FResult, $this->FromJSON($FValue, null));
+                    } elseif (is_array($FValue)) $FResult[$FKey] = $this->FromJSON($FValue, $AParse); else $FResult[$FKey] = $FValue;
                 }
             } else {
-                $FParseJSON = self::FromJSON($AValue);
+                $FParseJSON = $this->FromJSON($AValue);
                 if ($FParseJSON) {
-                    if (self::Length($FParseKeys) == 0) $FResult = $FParseJSON; else {
+                    if ($this->Length($FParseKeys) == 0) $FResult = $FParseJSON; else {
                         foreach ($FParseJSON as $FKey => $FValue) {
                             if ((new StrOf)->Found($FParseKeys, $FKey, 1, SF_SameText)) {
-                                if (isset($AParse[$FKey])) $FResult[self::First($AParse[$FKey])] = $FValue; else $FResult[$FKey] = $FValue;
+                                if (isset($AParse[$FKey])) $FResult[$this->First($AParse[$FKey])] = $FValue; else $FResult[$FKey] = $FValue;
                             }
                         }
                     }
                 }
             }
         }
-        return self::First($FResult, true);
+        return $this->First($FResult, true);
     }
 
     /**
@@ -1489,14 +1537,14 @@ class ArrayOf {
         $FResult = $AValue;
         if (!is_array($FResult) and $AForce) $FResult = [$FResult];
         if ($ASubJSON) {
-            if (self::Length($FResult) > 0) {
+            if ($this->Length($FResult) > 0) {
                 foreach($FResult as $FKey => $FValue) {
                     if (is_array($FValue)) {
                         $FEncode = json_encode($FValue, JSON_UNESCAPED_UNICODE|JSON_FORCE_OBJECT);
                         if ($FEncode) $FResult[$FKey] = (new StrOf)->Replace($FEncode, [CH_PATH . CH_PATH, CH_PATH . CH_ANTI_PATH], [CH_PATH, CH_ANTI_PATH]); else $FResult[$FKey] = null;
                     }
                 }
-            } else $FResult = self::ToJSON($FResult);
+            } else $FResult = $this->ToJSON($FResult);
         } elseif (is_array($FResult)) {
             $FEncode = json_encode($FResult, JSON_UNESCAPED_UNICODE|JSON_FORCE_OBJECT);
             if ($FEncode) $FResult = (new StrOf)->Replace($FEncode, [CH_PATH . CH_PATH, CH_PATH . CH_ANTI_PATH], [CH_PATH, CH_ANTI_PATH]); else $FResult = null;
@@ -1510,14 +1558,15 @@ class ArrayOf {
      * @param bool $ASubArray
      * @return array|mixed|string|null
      */
-    public function ToString($AValue, $AInterval, $ASubArray = true) {
-        if (self::Length($AValue) > 0) {
+    public function ToString($AValue, $AInterval, $ASubArray = true, $APattern = null) {
+        if ($this->Length($AValue) > 0) {
             $FResult = null;
             foreach ($AValue as $FValue) {
                 if (is_array($FValue)) {
-                    if ($ASubArray) $FSubResult = self::ToString($FValue, $AInterval); else $FSubResult = null;
+                    if ($ASubArray) $FSubResult = $this->ToString($FValue, $AInterval, $ASubArray, $APattern); else $FSubResult = null;
                 } else $FSubResult = $FValue;
-                if ($FSubResult === $AInterval) $FResult .= $AInterval; else $FResult = (new StrOf)->Add($FResult, $FSubResult, $AInterval);
+                if ($FSubResult === $AInterval) $FResult .= $AInterval;
+                elseif (is_null($APattern)) $FResult = (new StrOf)->Add($FResult, $FSubResult, $AInterval); else $FResult = (new StrOf)->Add($FResult, (new StrOf)->Replace($APattern, '%s', $FSubResult), $AInterval);
             }
         } else $FResult = (new StrOf)->From($AValue);
         return $FResult;
@@ -1530,8 +1579,8 @@ class ArrayOf {
      */
     public function FromStringWithKey($AValue, &$AResult) {
         $AResult = [];
-        If ((self::FromString($AValue, CH_NET, $FSubResult) > 0) and (self::FromString(self::Value($FSubResult), CH_SPEC, $FKeys) > 0) and (self::FromString(self::Value($FSubResult, 2), CH_SPEC, $FValues) > 0) and (self::Length($FKeys) == self::Length($FValues))) return $AResult = array_combine($FKeys, $FValues);
-        return self::Length($AResult);
+        If (($this->FromString($AValue, CH_NET, $FSubResult) > 0) and ($this->FromString($this->Value($FSubResult), CH_SPEC, $FKeys) > 0) and ($this->FromString($this->Value($FSubResult, 2), CH_SPEC, $FValues) > 0) and ($this->Length($FKeys) == $this->Length($FValues))) return $AResult = array_combine($FKeys, $FValues);
+        return $this->Length($AResult);
     }
 
     /**
@@ -1539,7 +1588,7 @@ class ArrayOf {
      * @return string|null
      */
     public function ToStringWithKey($AValue) {
-        if (self::Length($AValue) > 0) return implode(CH_SPEC, array_keys($AValue)) . CH_NET . implode(CH_SPEC, array_values($AValue)); else return null;
+        if ($this->Length($AValue) > 0) return implode(CH_SPEC, array_keys($AValue)) . CH_NET . implode(CH_SPEC, array_values($AValue)); else return null;
     }
 
     /**
@@ -1554,15 +1603,15 @@ class ArrayOf {
      */
     public function FromFormatNumber($AValue, &$AResult, $AMin = null, $AMax = null, $AType = FILTER_VALIDATE_INT, $AStep = 1, $ASort = true) {
         $AResult = [];
-        if (self::FromString($AValue, CH_COMMA, $FResult) > 0) {
+        if ($this->FromString($AValue, CH_COMMA, $FResult) > 0) {
             foreach ($FResult as $FValue) {
-                $FValue = trim(self::First($FValue));
+                $FValue = trim($this->First($FValue));
                 if ((new DefaultOf)->TypeCheck($FValue, $AType)) {
                     $FValue = (new DefaultOf)->ValueFromString($FValue);
                     if ((new DefaultOf)->IntervalCheck($FValue, $AMin, $AMax)) array_push($AResult, $FValue);
-                } elseif (self::FromString($FValue, CH_MINUS, $FSubResult) == 2) {
-                    $FValue1 = self::Value($FSubResult);
-                    $FValue2 = self::Value($FSubResult, 2);
+                } elseif ($this->FromString($FValue, CH_MINUS, $FSubResult) == 2) {
+                    $FValue1 = $this->Value($FSubResult);
+                    $FValue2 = $this->Value($FSubResult, 2);
                     if ((new DefaultOf)->TypeCheck($FValue1, $AType) and (new DefaultOf)->TypeCheck($FValue2, $AType) and ($FValue1 <= $FValue2)) {
                         foreach (range($FValue1, $FValue2, $AStep) as $FSubValue) {
                             if ((new DefaultOf)->IntervalCheck($FSubValue, $AMin, $AMax)) array_push($AResult, $FSubValue);
@@ -1575,7 +1624,7 @@ class ArrayOf {
                 sort($AResult);
             }
         }
-        return self::Length($AResult);
+        return $this->Length($AResult);
     }
 
     /**
@@ -1587,7 +1636,7 @@ class ArrayOf {
      */
     public function FromFormatKeys($AValue, $AKeys, &$AResult, $AMax = null) {
         $AResult = [];
-        if (((new StrOf)->Length($AValue) > 0) and (self::Length($AKeys) > 0) and (new StrOf)->Found($AValue, $AKeys)) {
+        if (((new StrOf)->Length($AValue) > 0) and ($this->Length($AKeys) > 0) and (new StrOf)->Found($AValue, $AKeys)) {
             $FText = $AValue;
             if ((new StrOf)->Found($FText, [1, 2, 3, 4, 5, 6, 7, 8, 9])) {
                 $FKey = null;
@@ -1615,7 +1664,7 @@ class ArrayOf {
                 }
             }
         }
-        return self::Length($AResult);
+        return $this->Length($AResult);
     }
 
     /**
@@ -1629,15 +1678,15 @@ class ArrayOf {
     public function FromFormatPath($ASource, $APath, &$AResult, $ASeparator = CH_PATH, $AInterval = CH_POINT_COMMA) {
         $AResult = [];
         if ((new ArrayOf)->Length($ASource) > 0) $FResult = $ASource;
-        elseif (self::FromString($ASource, $AInterval, $FResult) == 0) $FResult = null;
+        elseif ($this->FromString($ASource, $AInterval, $FResult) == 0) $FResult = null;
         if ((new ArrayOf)->Length($FResult) > 0) {
-            $FIndex = self::FromString($APath, $ASeparator) + 1;
+            $FIndex = $this->FromString($APath, $ASeparator) + 1;
             foreach ($FResult as $FValue) {
-                if ((((new StrOf)->Length($APath) == 0) or ((new StrOf)->Pos($FValue, $APath . $ASeparator) == 1)) and (self::FromString($FValue, $ASeparator, $FSubResult) >= $FIndex)) array_push($AResult, self::Value($FSubResult, $FIndex));
+                if ((((new StrOf)->Length($APath) == 0) or ((new StrOf)->Pos($FValue, $APath . $ASeparator) == 1)) and ($this->FromString($FValue, $ASeparator, $FSubResult) >= $FIndex)) array_push($AResult, $this->Value($FSubResult, $FIndex));
             }
-            if (self::Length($AResult) > 0) $AResult = array_diff(array_unique($AResult), [CH_FREE]);
+            if ($this->Length($AResult) > 0) $AResult = array_diff(array_unique($AResult), [CH_FREE]);
         }
-        return self::Length($AResult);
+        return $this->Length($AResult);
     }
 
 
@@ -1657,9 +1706,9 @@ class ArrayOf {
      */
     public function Combine($AValues, $AKeys) {
         $FResult = [];
-        if ((self::Length($AValues) > 0) and (self::Length($AKeys) > 0)) {
+        if (($this->Length($AValues) > 0) and ($this->Length($AKeys) > 0)) {
             foreach ($AValues as $FKey => $FValue) {
-                if ((new DefaultOf)->TypeCheck($FKey) and is_array($FValue)) $FResult[$FKey] = self::Combine($FValue, $AKeys); else {
+                if ((new DefaultOf)->TypeCheck($FKey) and is_array($FValue)) $FResult[$FKey] = $this->Combine($FValue, $AKeys); else {
                     foreach ($AKeys as $FSubKey => $FSubValue) {
                         if (is_array($FSubValue)) {
                             if ((new StrOf)->Found($FSubValue, $FKey, 1, SF_WithKeySame)) {
@@ -1681,7 +1730,7 @@ class ArrayOf {
      * @return mixed
      */
     public function PathGet($AValues, $APath, $ADefault = null, $ASeparator = CH_POINT) {
-        if (self::FromString($APath, $ASeparator, $FSubResult) > 0) {
+        if ($this->FromString($APath, $ASeparator, $FSubResult) > 0) {
             $FResult = $AValues;
             foreach($FSubResult as $FKey) {
                 if (!isset($FResult[$FKey])) return $ADefault;
@@ -1700,7 +1749,7 @@ class ArrayOf {
      */
     public function PathSet(&$AValues, $APath, $ANewValue, $ASeparator = CH_POINT) {
         $FValues = $AValues;
-        if (self::FromString($APath, $ASeparator, $FSubResult) > 0) {
+        if ($this->FromString($APath, $ASeparator, $FSubResult) > 0) {
             if (isset($AValues) and !is_array($AValues)) $AValues = [$AValues];
             $FResult = &$AValues;
             foreach($FSubResult as $FKey) {
@@ -1719,19 +1768,19 @@ class ArrayOf {
      */
     public function PathDelete(&$AValues, $APath, $ASeparator = CH_POINT) {
         $FValues = $AValues;
-        if (self::FromString($APath, $ASeparator, $FSubResult) > 0) {
+        if ($this->FromString($APath, $ASeparator, $FSubResult) > 0) {
             if (isset($AValues) and !is_array($AValues)) $AValues = [$AValues];
-            $FMax = ALGOL::ArrayOf()->Length($FSubResult);
-            while (self::PathDeleteExecute1($AValues, $FSubResult, $FMax)) {
+            $FMax = (new ArrayOf)->Length($FSubResult);
+            while ($this->PathDeleteExecute1($AValues, $FSubResult, $FMax)) {
                 array_pop($FSubResult);
             }
-            if (ALGOL::ArrayOf()->Length($AValues) < 1) $AValues = null;
+            if ((new ArrayOf)->Length($AValues) < 1) $AValues = null;
         } else $AValues = null;
         return $FValues != $AValues;
     }
 
     private function PathDeleteExecute1(&$AValues, $AKeys, $AMax) {
-        $FCount = ALGOL::ArrayOf()->Length($AKeys);
+        $FCount = (new ArrayOf)->Length($AKeys);
         if ($FCount > 0) {
             $FResult = &$AValues;
             $i = 0;
@@ -1739,7 +1788,7 @@ class ArrayOf {
                 $i++;
                 if (!isset($FResult[$FKey])) return false;
                 elseif ($i == $FCount) {
-                    if (($AMax == $FCount) or (ALGOL::ArrayOf()->Length($FResult[$FKey]) < 1)) unset($FResult[$FKey]);
+                    if (($AMax == $FCount) or ((new ArrayOf)->Length($FResult[$FKey]) < 1)) unset($FResult[$FKey]);
                 } else $FResult = &$FResult[$FKey];
             }
             return true;
@@ -1753,7 +1802,7 @@ class ArrayOf {
      * @return bool
      */
     public function PathExists($AValues, $APath, $ASeparator = CH_POINT) {
-        if (self::FromString($APath, $ASeparator, $FSubResult) > 0) {
+        if ($this->FromString($APath, $ASeparator, $FSubResult) > 0) {
             $FResult = $AValues;
             foreach ($FSubResult as $FKey) {
                 if (!isset($FResult[$FKey])) return false;
@@ -1761,6 +1810,124 @@ class ArrayOf {
             }
             return true;
         } else return false;
+    }
+
+    /**
+     * @param $AValue
+     * @param $AAction
+     * @param $AParam
+     * @return array
+     */
+    public function FromAction($AValues, $AParam) {
+        $FResult = $AValues;
+        if (!$this->Empty($FResult) and !$this->Empty($AParam) and isset($AParam['action']) and isset($AParam['name'])) {
+            $FAction = $AParam['action'];
+            $FName = $AParam['name'];
+            if ($FName == CH_STAR) {
+                switch ($FAction) {
+                    case AA_Trim:
+                        $FLength = (new DefaultOf)->ValueCheck($AParam['length'], 0);
+                        foreach ($FResult as $FKey => $FValue) {
+                            if ($FLength > 0) $FResult[$FKey] = trim((new StrOf)->Copy(trim($FValue), 1, $FLength, false, CH_POINT_THREE)); else $FResult[$FKey] = trim($FValue);
+                        }
+                        break;
+                    case AA_ToValue:
+                        $FDecimal = (new DefaultOf)->ValueCheck($AParam['decimal'], 2);
+                        $FThousand = (new DefaultOf)->ValueCheck($AParam['thousand'], CH_FREE);
+                        foreach ($FResult as $FKey => $FValue) {
+                            $FResult[$FKey] = (new DefaultOf)->ValueFromString($FValue, $FDecimal, $FThousand);
+                        }
+                        break;
+                    case AA_ToArray:
+                        $FSeparator = (new DefaultOf)->ValueCheck($AParam['separator'], CH_COMMA);
+                        foreach ($FResult as $FKey => $FValue) {
+                            if ($this->FromString($FValue, $FSeparator, $FSubResult) > 0) {
+                                foreach ($FSubResult as $FSubKey => $FSubValue) {
+                                    $FResult[$FKey . CH_BRACE_SQR_BEGIN . ($FSubKey + 1) . CH_BRACE_SQR_END] = $FSubValue;
+                                }
+                            }
+                        }
+                        break;
+                }
+            } else {
+                switch ($FAction) {
+                    case AA_Trim:
+                        if (isset($FResult[$FName])) {
+                            $FLength = (new DefaultOf)->ValueCheck($AParam['length'], 0);
+                            if ($FLength > 0) $FResult[$FName] = trim((new StrOf)->Copy(trim($FResult[$FName]), 1, $FLength, false, CH_POINT_THREE)); else $FResult[$FName] = trim($FResult[$FName]);
+                        }
+                        break;
+                    case AA_ToValue:
+                        if (isset($FResult[$FName])) {
+                            $FDecimal = (new DefaultOf)->ValueCheck($AParam['decimal'], 2);
+                            $FThousand = (new DefaultOf)->ValueCheck($AParam['thousand'], CH_FREE);
+                            $FResult[$FName] = (new DefaultOf)->ValueFromString($FResult[$FName], $FDecimal, $FThousand);
+                        }
+                        break;
+                    case AA_ToArray:
+                        $FSeparator = (new DefaultOf)->ValueCheck($AParam['separator'], CH_COMMA);
+                        if (isset($FResult[$FName]) and ($this->FromString($FResult[$FName], $FSeparator, $FSubResult) > 0)) {
+                            foreach ($FSubResult as $FSubKey => $FSubValue) {
+                                $FResult[$FName . CH_BRACE_SQR_BEGIN . ($FSubKey + 1) . CH_BRACE_SQR_END] = $FSubValue;
+                            }
+                            unset($FResult[$FName]);
+                        }
+                        break;
+                    case AA_Ternary:
+                        $FValue1 = (new DefaultOf)->ValueCheck($AParam['value1'], null);
+                        $FValue2 = (new DefaultOf)->ValueCheck($AParam['value2'], null);
+                        $FFalse = (new DefaultOf)->ValueCheck($AParam['false'], null);
+                        $FTrue = (new DefaultOf)->ValueCheck($AParam['true'], null);
+                        if (isset($FValue1, $FValue2, $FFalse, $FTrue)) {
+                            $FReplaceKeys = array_keys($FResult);
+                            $FReplaceValues = array_values($FResult);
+                            $FValue1 = (new StrOf)->Replace($FValue1, $FReplaceKeys, $FReplaceValues);
+                            $FValue2 = (new StrOf)->Replace($FValue2, $FReplaceKeys, $FReplaceValues);
+                            $FFalse = (new StrOf)->Replace($FFalse, $FReplaceKeys, $FReplaceValues);
+                            $FTrue = (new StrOf)->Replace($FTrue, $FReplaceKeys, $FReplaceValues);
+                            $FResult[$FName] = ($FValue1 == $FValue2) ? $FTrue : $FFalse;
+                        } else $FResult[$FName] = $FFalse;
+                        break;
+                }
+            }
+        }
+        return $FResult;
+    }
+
+    /**
+     * @param $AValues
+     * @param $AFormat
+     * @param $AClearSubArray
+     * @param $AStringToValue
+     * @param $AFixedKey
+     * @return array
+     */
+    public function FromFormat($AValues, $AFormat, &$AResult, $ADefault = CH_FREE, $AInterval = CH_FREE, $AClearSubArray = true, $AFixedKey = true, $AParam = null) {
+        $FResult = $ADefault;
+        $AResult = $AValues;
+        if (!$this->Empty($AResult) and !(new StrOf)->Empty($AFormat)) {
+            $FResult = CH_FREE;
+            $FKeys = null;
+            $FLength = (new ArrayOf)->Length($AResult);
+            $FCount = 0;
+            foreach ($AResult as $FKey => $FValue) {
+                $FCount++;
+                if (is_array($FValue)) {
+                    if (!$AFixedKey or is_null($FKeys)) $FKeys = array_keys($FValue);
+                    $AResult[$FKey] = (new StrOf)->Replace($AFormat, $FKeys, array_values($FValue));
+                    if ((new DefaultOf)->TypeCheck($FKey)) $AResult[$FKey] = (new StrOf)->Replace($AResult[$FKey], CH_NUMBER, $FKey + 1);
+                    if (is_array($AParam)) {
+                        foreach ($AParam as $FParamValue) {
+                            $AResult[$FKey] = $this->FromAction($FValue, $FParamValue);
+                        }
+                    }
+                    if (!$AClearSubArray) $AResult[$FKey] = [$AResult[$FKey]];
+                    $FResult .= $AResult[$FKey];
+                    if (isset($AInterval) and ($FCount < $FLength)) $FResult .= $AInterval;
+                }
+            }
+        }
+        return $FResult;
     }
 
 }
@@ -1909,7 +2076,7 @@ class SystemOf {
                 if (is_numeric($FChar)) $FResult .= $FChar; else $FResult .= ord($FChar) - 97;
             }
         } else $FResult = $FHash;
-        return ALGOL::StrOf()->Copy($FResult, 1, $ALength);
+        return (new StrOf)->Copy($FResult, 1, $ALength);
     }
 
 }
@@ -2267,11 +2434,10 @@ class MysqlDbOf extends MysqliDb {
      * @param null $ANumRows
      * @param null $AFormat
      * @param bool $AFormatClearSubArray
-     * @param null $AValueFromString
      * @param null $AJSONParseField
      * @return array|MysqlDbOf|string|null
      */
-    public function getOf($ATableName, $AColumns = "*", $ANumRows = null, $AFormat = null, $AFormatClearSubArray = true, $AValueFromString = null, $AJSONParseField = null) {
+    public function getOf($ATableName, $AColumns = "*", $ANumRows = null, $AFormat = null, $AFormatClearSubArray = true, $AJSONParseField = null) {
         $FResult = null;
         try {
             // Get result
@@ -2281,14 +2447,7 @@ class MysqlDbOf extends MysqliDb {
                 if ((new StrOf)->Length($AJSONParseField) > 0) $FResult = (new ArrayOf)->FromJSON($FResult, $AJSONParseField);
                 // Get format
                 if (($ANumRows <> 1) and !is_null($AFormat)) {
-                    foreach ($FResult as $FKey => $FValue) {
-                        if (is_array($FValue)) {
-                            $FResult[$FKey] = (new StrOf)->Replace($AFormat, array_keys($FValue), array_values($FValue));
-                            if ((new DefaultOf)->TypeCheck($FKey)) $FResult[$FKey] = (new StrOf)->Replace($FResult[$FKey], CH_NUMBER, $FKey + 1);
-                            if (($AValueFromString === true) or ((new ArrayOf)->Length($AValueFromString) > 0)) $FResult[$FKey] = (new DefaultOf)->ValueFromString($FResult[$FKey], (new DefaultOf)->ValueCheck($AValueFromString[0], 2), (new DefaultOf)->ValueCheck($AValueFromString[1], CH_FREE));
-                            if (!$AFormatClearSubArray) $FResult[$FKey] = [$FResult[$FKey]];
-                        }
-                    }
+                    (new ArrayOf)->FromFormat($FResult, $AFormat, $FResult, CH_FREE, CH_FREE, $AFormatClearSubArray);
                 }
             }
         } catch (Exception $e) {
@@ -2304,7 +2463,6 @@ class MysqlDbOf extends MysqliDb {
      * @param null $ANumRows
      * @param null $AFormat
      * @param bool $AFormatClearSubArray
-     * @param null $AValueFromString
      * @param null $AOrder
      * @param null $AGroup
      * @param null $AJoin
@@ -2313,9 +2471,9 @@ class MysqlDbOf extends MysqliDb {
      * @param string $ACond
      * @return bool|null
      */
-    public function Filter($ATableName, $AValues, &$AResult, $AColumns = "*", $ANumRows = null, $AFormat = null, $AFormatClearSubArray = true, $AValueFromString = null, $AOrder = null, $AGroup = null, $AJoin = null, $AJoinWhere = null, $AJSONParseField = null, $ACond = "AND") {
+    public function Filter($ATableName, $AValues, &$AResult, $AColumns = "*", $ANumRows = null, $AFormat = null, $AFormatClearSubArray = true, $AOrder = null, $AGroup = null, $AJoin = null, $AJoinWhere = null, $AJSONParseField = null, $ACond = "AND") {
         $AResult = null;
-        if ((is_null($AJoin) or $this->joinOf($AJoin, $AJoinWhere, $ACond)) and (is_null($AValues) or $this->whereOf($AValues, $ACond)) and (is_null($AOrder) or $this->orderByOf($AOrder)) and (is_null($AGroup) or $this->groupByOf($AGroup))) $AResult = $this->getOf($ATableName, $AColumns, $ANumRows, $AFormat, $AFormatClearSubArray, $AValueFromString, $AJSONParseField);
+        if ((is_null($AJoin) or $this->joinOf($AJoin, $AJoinWhere, $ACond)) and (is_null($AValues) or $this->whereOf($AValues, $ACond)) and (is_null($AOrder) or $this->orderByOf($AOrder)) and (is_null($AGroup) or $this->groupByOf($AGroup))) $AResult = $this->getOf($ATableName, $AColumns, $ANumRows, $AFormat, $AFormatClearSubArray, $AJSONParseField);
         return (bool) $AResult;
     }
 
@@ -2333,7 +2491,7 @@ class MysqlDbOf extends MysqliDb {
      * @return bool|null
      */
     public function FilterOne($ATableName, $AValues, &$AResult, $AColumns = "*", $AOrder = null, $AGroup = null, $AJoin = null, $AJoinWhere = null, $AJSONParseField = null, $ACond = "AND") {
-        return $this->Filter($ATableName, $AValues, $AResult, $AColumns, 1, null, true, null, $AOrder, $AGroup, $AJoin, $AJoinWhere, $AJSONParseField, $ACond);
+        return $this->Filter($ATableName, $AValues, $AResult, $AColumns, 1, null, true, $AOrder, $AGroup, $AJoin, $AJoinWhere, $AJSONParseField, $ACond);
     }
 
     /**
@@ -2586,9 +2744,9 @@ class TelegramOf extends Telegram {
      */
     public function getUpdateTypeOf() {
         $FResult = $this->getUpdateType();
-        if (($FResult === self::MESSAGE) and ($this->getData()["message"]["chat"]["type"] === self::GROUP_POST)) $FResult = self::GROUP_POST;
+        if (($FResult === $this->MESSAGE) and ($this->getData()["message"]["chat"]["type"] === $this->GROUP_POST)) $FResult = $this->GROUP_POST;
         elseif (!$FResult) {
-            if (isset($this->getData()["poll_answer"])) $FResult = self::POLL_ANSWER;
+            if (isset($this->getData()["poll_answer"])) $FResult = $this->POLL_ANSWER;
         }
         return $FResult;
     }
@@ -2606,7 +2764,7 @@ class TelegramOf extends Telegram {
      * @return mixed
      */
     public function ChatIDOf() {
-        if ($this->getUpdateTypeOf() === self::POLL_ANSWER) $FResult = $this->getData()["poll_answer"]["user"]["id"]; else $FResult = $this->ChatID();
+        if ($this->getUpdateTypeOf() === $this->POLL_ANSWER) $FResult = $this->getData()["poll_answer"]["user"]["id"]; else $FResult = $this->ChatID();
         return $FResult;
     }
 
@@ -2614,7 +2772,7 @@ class TelegramOf extends Telegram {
      * @return mixed
      */
     public function PollIDOf() {
-        if ($this->getUpdateTypeOf() === self::POLL_ANSWER) $FResult = $this->getData()["poll_answer"]["poll_id"]; else $FResult = null;
+        if ($this->getUpdateTypeOf() === $this->POLL_ANSWER) $FResult = $this->getData()["poll_answer"]["poll_id"]; else $FResult = null;
         return $FResult;
     }
 
@@ -2622,7 +2780,7 @@ class TelegramOf extends Telegram {
      * @return mixed
      */
     public function CaptionOf() {
-        if ($this->getUpdateTypeOf() === self::CALLBACK_QUERY) $FResult = $this->getData()["callback_query"]["message"]["caption"]; else $FResult = $this->Caption();
+        if ($this->getUpdateTypeOf() === $this->CALLBACK_QUERY) $FResult = $this->getData()["callback_query"]["message"]["caption"]; else $FResult = $this->Caption();
         return $FResult;
     }
 
@@ -2647,7 +2805,7 @@ class TelegramOf extends Telegram {
      * @return string|null
      */
     public function TextOf($ACharCase = null) {
-        if ($this->getUpdateTypeOf() === self::POLL_ANSWER) {
+        if ($this->getUpdateTypeOf() === $this->POLL_ANSWER) {
             $FResult = $this->getData()["poll_answer"]["option_ids"];
             if ((new ArrayOf)->Length($FResult) > 0) $FResult = range("A", "Z")[(new ArrayOf)->First($FResult)]; else $FResult = null;
         } else $FResult = $this->Text();
@@ -2676,7 +2834,7 @@ class TelegramOf extends Telegram {
      * @return string
      */
     public function FullName($ADefault = "none") {
-        if ($this->getUpdateTypeOf() === self::POLL_ANSWER) {
+        if ($this->getUpdateTypeOf() === $this->POLL_ANSWER) {
             $FData = $this->getData()["poll_answer"]["user"];
             $FResult = trim(trim($FData["first_name"]) . CH_SPACE . trim($FData["last_name"]));
             if ((new StrOf)->Length($FResult) == 0) $FResult = trim($FData["username"]);
@@ -2938,7 +3096,7 @@ class TelegramOf extends Telegram {
     public function downloadFileOf(&$AResult, $ACompareName = null) {
         $FResult = false;
         $AResult = CH_FREE;
-        if ($this->getUpdateTypeOf() == self::DOCUMENT) {
+        if ($this->getUpdateTypeOf() == $this->DOCUMENT) {
             $FFileID = $this->getFileID();
             $FFileName = $this->getFileName();
             $FData = $this->getFile($FFileID);
@@ -3200,8 +3358,8 @@ class Html5Of extends HTML5 {
     }
 
     public function Count($ASource, $ASearch) {
-        if (file_exists($ASource)) $FSource = self::load($ASource); else $FSource = self::loadHTML($ASource);
-        return ALGOL::StrOf()->Found(self::saveHTML($FSource), $ASearch, 1, SF_GetCount, false, false, ['<%s', '< %s']);
+        if (file_exists($ASource)) $FSource = $this->load($ASource); else $FSource = $this->loadHTML($ASource);
+        return (new StrOf)->Found($this->saveHTML($FSource), $ASearch, 1, SF_GetCount, false, false, ['<%s', '< %s']);
     }
 
 }
@@ -3245,13 +3403,13 @@ class StorageOf {
         $this->FOptions = $AOptions;
         if (isset($this->FOptions['security'])) $this->FSecurity = $this->FOptions['security'];
         if (isset($this->FOptions['separator'])) $this->FSeparator = $this->FOptions['separator'];
-        self::Open();
+        $this->Open();
     }
 
     private function ParseName($AValue, &$AName, &$APath) {
-        $APath = ALGOL::ArrayOf()->FromStringWithArray($AValue, $this->FSeparator);
+        $APath = (new ArrayOf)->FromStringWithArray($AValue, $this->FSeparator);
         $AName = $APath[0];
-        if (ALGOL::ArrayOf()->Length($APath) > 1) unset($APath[0]); else $APath = null;
+        if ((new ArrayOf)->Length($APath) > 1) unset($APath[0]); else $APath = null;
         return ;
     }
 
@@ -3260,13 +3418,13 @@ class StorageOf {
             $FResult = $AValue;
             switch ($this->FType) {
                 case SOT_Database:
-                    $FResult .= ALGOL::DefaultOf()->ValueCheck($_SERVER['HTTP_USER_AGENT'], CH_FREE) . ALGOL::DefaultOf()->ValueCheck($_SERVER['REMOTE_ADDR'], CH_FREE);
+                    $FResult .= (new DefaultOf)->ValueCheck($_SERVER['HTTP_USER_AGENT'], CH_FREE) . (new DefaultOf)->ValueCheck($_SERVER['REMOTE_ADDR'], CH_FREE);
                     break;
                 case SOT_Dynamic:
-                    $FResult .= ALGOL::DefaultOf()->ValueCheck(session_name(), CH_FREE) . ALGOL::DefaultOf()->ValueCheck(session_id(), CH_FREE);
+                    $FResult .= (new DefaultOf)->ValueCheck(session_name(), CH_FREE) . (new DefaultOf)->ValueCheck(session_id(), CH_FREE);
                     break;
             }
-            $FResult = ALGOL::SystemOf()->HashMD5($FResult, $this->FSecurity, HMT_Number);
+            $FResult = (new SystemOf)->HashMD5($FResult, $this->FSecurity, HMT_Number);
         } else $FResult = $AValue;
         return $FResult;
     }
@@ -3293,7 +3451,7 @@ class StorageOf {
                     unset($this->FObject);
                 }
                 $this->FObject = mysqli_connect($this->FOptions['host'], $this->FOptions['username'], $this->FOptions['password'], $this->FOptions['database']);
-                $FResult = (mysqli_errno($this->FObject) == 0) and ALGOL::StrOf()->ToSQL($this->FObject, "CREATE TABLE IF NOT EXISTS `" . $this->FTableName . "` (                    
+                $FResult = (mysqli_errno($this->FObject) == 0) and (new StrOf)->ToSQL($this->FObject, "CREATE TABLE IF NOT EXISTS `" . $this->FTableName . "` (                    
 	                `fkey` VARCHAR(64) NOT NULL COLLATE 'utf8mb4_unicode_ci',
 	                `fvalue` LONGTEXT NOT NULL COLLATE 'utf8mb4_unicode_ci',
 	                `fexpire` VARCHAR(16) NOT NULL COLLATE 'utf8mb4_unicode_ci',
@@ -3335,7 +3493,7 @@ class StorageOf {
                 break;
             case SOT_File:
             case SOT_Request:
-                self::Clear();
+                $this->Clear();
                 break;
         }
         return;
@@ -3343,54 +3501,54 @@ class StorageOf {
 
     public function Get($AName, $ADefault = null) {
         $FResult = $ADefault;
-        if (self::isStarted() and !ALGOL::StrOf()->Empty($AName)) {
-            self::ParseName($AName, $FName, $FPath);
+        if ($this->isStarted() and !(new StrOf)->Empty($AName)) {
+            $this->ParseName($AName, $FName, $FPath);
             switch ($this->FType) {
                 case SOT_Database:
-                    $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "SELECT fvalue FROM " . $this->FTableName . " WHERE fkey = ? and fexpire > ? LIMIT 1", [self::GetHash($FName), time()], TSF_One);
-                    if (isset($FResult['fvalue'])) $FResult = ALGOL::ArrayOf()->FromJSON($FResult['fvalue']); else $FResult = null;
-                    ALGOL::StrOf()->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fexpire < ?;", [time()]);
+                    $FResult = (new StrOf)->ToSQL($this->FObject, "SELECT fvalue FROM " . $this->FTableName . " WHERE fkey = ? and fexpire > ? LIMIT 1", [$this->GetHash($FName), time()], TSF_One);
+                    if (isset($FResult['fvalue'])) $FResult = (new ArrayOf)->FromJSON($FResult['fvalue']); else $FResult = null;
+                    (new StrOf)->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fexpire < ?;", [time()]);
                     break;
                 case SOT_Dynamic: // session
-                    $FResult = $_SESSION[self::GetHash($FName)];
+                    $FResult = $_SESSION[$this->GetHash($FName)];
                     break;
                 case SOT_File: // cookie
-                    $FResult = $_COOKIE[self::GetHash($FName)];
-                    if (isset($FResult)) $FResult = ALGOL::ArrayOf()->FromJSON($FResult); else $FResult = null;
+                    $FResult = $_COOKIE[$this->GetHash($FName)];
+                    if (isset($FResult)) $FResult = (new ArrayOf)->FromJSON($FResult); else $FResult = null;
                     break;
                 case SOT_Request:
-                    $FResult = self::All();
-                    if (isset($FResult)) $FResult = $FResult[self::GetHash($FName)];
+                    $FResult = $this->All();
+                    if (isset($FResult)) $FResult = $FResult[$this->GetHash($FName)];
                     break;
             }
-            $FResult = ALGOL::ArrayOf()->PathGet($FResult, $FPath, null, $this->FSeparator);
+            $FResult = (new ArrayOf)->PathGet($FResult, $FPath, null, $this->FSeparator);
         }
-//        $FResult = ALGOL::ArrayOf()->First($FResult, true);
+//        $FResult = (new ArrayOf)->First($FResult, true);
         return $FResult;
     }
 
     public function Put($AName, $ADefault = null) {
-        $FResult = self::Get($AName, $ADefault);
-        self::Delete($AName);
+        $FResult = $this->Get($AName, $ADefault);
+        $this->Delete($AName);
         return $FResult;
     }
 
     public function Set($AName, $AValue) {
         $FResult = false;
-        if (!ALGOL::StrOf()->Empty([$AName, $AValue])) {
-            self::ParseName($AName, $FName, $FPath);
-            $FResult = self::Get($FName);
-            if (ALGOL::ArrayOf()->PathSet($FResult, $FPath, $AValue, $this->FSeparator)) {
+        if (!(new StrOf)->Empty([$AName, $AValue])) {
+            $this->ParseName($AName, $FName, $FPath);
+            $FResult = $this->Get($FName);
+            if ((new ArrayOf)->PathSet($FResult, $FPath, $AValue, $this->FSeparator)) {
                 switch ($this->FType) {
                     case SOT_Database:
-                        $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "INSERT INTO " . $this->FTableName . " (fkey, fvalue, fexpire) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE fvalue = VALUES(fvalue), fexpire = VALUES(fexpire);", [self::GetHash($FName), ALGOL::ArrayOf()->ToJSON($FResult), time() + $this->FTimeout]);
-                        ALGOL::StrOf()->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fexpire < ?;", [time()]);
+                        $FResult = (new StrOf)->ToSQL($this->FObject, "INSERT INTO " . $this->FTableName . " (fkey, fvalue, fexpire) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE fvalue = VALUES(fvalue), fexpire = VALUES(fexpire);", [$this->GetHash($FName), (new ArrayOf)->ToJSON($FResult), time() + $this->FTimeout]);
+                        (new StrOf)->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fexpire < ?;", [time()]);
                         break;
                     case SOT_Dynamic: // session
-                        $_SESSION[self::GetHash($FName)] = $FResult;
+                        $_SESSION[$this->GetHash($FName)] = $FResult;
                         break;
                     case SOT_File: // cookie
-                        $FResult = setcookie(self::GetHash($FName), ALGOL::ArrayOf()->ToJSON($FResult), time() + $this->FTimeout, CH_ANTI_PATH);
+                        $FResult = setcookie($this->GetHash($FName), (new ArrayOf)->ToJSON($FResult), time() + $this->FTimeout, CH_ANTI_PATH);
                         break;
                     case SOT_Request:
                         $FResult = false;
@@ -3402,11 +3560,11 @@ class StorageOf {
     }
 
     public function Exists($AName) {
-        return !is_null(self::Get($AName));
+        return !is_null($this->Get($AName));
     }
 
     public function GetArithmetic($AName, $AValue = 1, $AOperator = GAO_Addition) {
-        $FResult = self::Get($AName, 0);
+        $FResult = $this->Get($AName, 0);
         switch ($AOperator) {
             case GAO_Addition:
                 $FResult += $AValue;
@@ -3424,33 +3582,33 @@ class StorageOf {
                 $FResult %= $AValue;
                 break;
         }
-        self::Set($AName, $FResult);
+        $this->Set($AName, $FResult);
         return $FResult;
     }
 
     public function Delete($AName) {
         $FResult = false;
-        if (self::isStarted() and !ALGOL::StrOf()->Empty($AName)) {
-            self::ParseName($AName, $FName, $FPath);
-            $FResult = self::Get($FName);
-            if (isset($FResult) and (is_null($FPath) or ALGOL::ArrayOf()->PathDelete($FResult, $FPath, $this->FSeparator))) {
+        if ($this->isStarted() and !(new StrOf)->Empty($AName)) {
+            $this->ParseName($AName, $FName, $FPath);
+            $FResult = $this->Get($FName);
+            if (isset($FResult) and (is_null($FPath) or (new ArrayOf)->PathDelete($FResult, $FPath, $this->FSeparator))) {
                 if (is_null($FPath) or is_null($FResult)) {
                     switch ($this->FType) {
                         case SOT_Database:
-                            $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fkey = ?;", [self::GetHash($FName)]);
+                            $FResult = (new StrOf)->ToSQL($this->FObject, "DELETE FROM " . $this->FTableName . " WHERE fkey = ?;", [$this->GetHash($FName)]);
                             break;
                         case SOT_Dynamic: // session
-                            unset($_SESSION[self::GetHash($FName)]);
+                            unset($_SESSION[$this->GetHash($FName)]);
                             break;
                         case SOT_Request:
-                            unset($_COOKIE[self::GetHash($FName)]);
-                            setcookie(self::GetHash($FName), CH_FREE, time() - 3600, CH_ANTI_PATH);
+                            unset($_COOKIE[$this->GetHash($FName)]);
+                            setcookie($this->GetHash($FName), CH_FREE, time() - 3600, CH_ANTI_PATH);
                             break;
                         case SOT_File: // cookie
                             $FResult = false;
                             break;
                     }
-                } else $FResult = self::Set($FName, $FResult);
+                } else $FResult = $this->Set($FName, $FResult);
             } else $FResult = false;
         }
         return (bool)$FResult;
@@ -3458,10 +3616,10 @@ class StorageOf {
 
     public function Clear() {
         $FResult = false;
-        if (self::isStarted()) {
+        if ($this->isStarted()) {
             switch ($this->FType) {
                 case SOT_Database:
-                    $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "TRUNCATE TABLE " . $this->FTableName . ";");
+                    $FResult = (new StrOf)->ToSQL($this->FObject, "TRUNCATE TABLE " . $this->FTableName . ";");
                     break;
                 case SOT_Dynamic: // session
                     $FResult = session_unset();
@@ -3488,10 +3646,10 @@ class StorageOf {
 
     public function All($AJSON = false) {
         $FResult = null;
-        if (self::isStarted()) {
+        if ($this->isStarted()) {
             switch ($this->FType) {
                 case SOT_Database:
-                    $FResult = ALGOL::StrOf()->ToSQL($this->FObject, "SELECT * FROM " . $this->FTableName . ";", null, TSF_JSON);
+                    $FResult = (new StrOf)->ToSQL($this->FObject, "SELECT * FROM " . $this->FTableName . ";", null, TSF_JSON);
                     break;
                 case SOT_Dynamic: // session
                     $FResult = $_SESSION;
@@ -3499,7 +3657,7 @@ class StorageOf {
                 case SOT_File:
                     $FResult = [];
                     foreach ($_COOKIE as $FKey => $FValue) {
-                        $FResult[$FKey] = ALGOL::ArrayOf()->FromJSON($FValue);
+                        $FResult[$FKey] = (new ArrayOf)->FromJSON($FValue);
                     }
                     if (isset($FResult[$this->FSessionName])) unset($FResult[$this->FSessionName]);
                     break;
@@ -3524,13 +3682,13 @@ class StorageOf {
                         $FValue4 = Request::input('DELETE');
                         $FValue4 = $FValue4()->asArray();
                     }
-                    $FResult = ALGOL::ArrayOf()->Of(AO_Merge, $FValue1, $FValue2, $FValue3, $FValue4);
+                    $FResult = (new ArrayOf)->Of(AO_Merge, $FValue1, $FValue2, $FValue3, $FValue4);
                     if (isset($FResult['_csrf'])) unset($FResult['_csrf']);
                     break;
             }
-            if (isset($FResult) and (ALGOL::ArrayOf()->Length($FResult) < 1)) $FResult = null;
+            if (isset($FResult) and ((new ArrayOf)->Length($FResult) < 1)) $FResult = null;
         }
-        if ($AJSON and isset($FResult)) $FResult = ALGOL::ArrayOf()->ToJSON($FResult);
+        if ($AJSON and isset($FResult)) $FResult = (new ArrayOf)->ToJSON($FResult);
         return $FResult;
     }
 
