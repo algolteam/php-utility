@@ -3695,7 +3695,7 @@ class StorageOf {
 }
 
 /**
- * FakerOf
+ * FakerOf helper
  *
  * @category  Class
  * @package   Utility
