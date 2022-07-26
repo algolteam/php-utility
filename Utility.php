@@ -3669,7 +3669,7 @@ class StorageOf {
                     if (Request::isGet()) {
                         $FValue1 = Request::input('GET');
                         $FValue1 = $FValue1()->asArray();
-                    }                    
+                    }
                     if (Request::isPost()) {
                         $FValue2 = Request::input('POST');
                         $FValue2 = $FValue2()->asArray();
