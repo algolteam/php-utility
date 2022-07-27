@@ -1930,6 +1930,36 @@ class ArrayOf {
         return $FResult;
     }
 
+    public function Search($AValues, $ASearch, $AGetPath = false) {
+        if (is_array($ASearch)) {
+            foreach ($ASearch as $FKey => $FValue) {
+                if (key_exists($FKey, $AValues) and (new StrOf)->Same($FValue, $AValues[$FKey])) {
+                    return ($AGetPath) ? [$FKey] : $AValues;
+                }
+            }
+            foreach ($AValues as $FKey => $FValue) {
+                if (is_array($FValue)) {
+                    $FResult = $this->Search($FValue, $ASearch, $AGetPath);
+                    if ($FResult) {
+                        return ($AGetPath) ? array_merge([$FKey], $FResult) : $FResult;
+                    }
+                }
+            }
+        } else {
+            foreach ($AValues as $FKey => $FValue) {
+                if (is_array($FValue)) {
+                    $FResult = $this->Search($FValue, $ASearch, $AGetPath);
+                    if ($FResult) {
+                        return ($AGetPath) ? array_merge([$FKey], $FResult) : $FResult;
+                    }
+                } elseif ((new StrOf)->Same($FValue, $ASearch)) {
+                    return ($AGetPath) ? [$FKey] : $AValues;
+                }
+            }
+        }
+        return false;
+    }
+
 }
 
 /**
