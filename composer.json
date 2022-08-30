@@ -23,6 +23,7 @@
         "masterminds/html5": "*",
         "josantonius/request": "*",
         "fakerphp/faker": "*",
+        "chriskonnertz/string-calc": "*",
         "ext-json": "*",
         "ext-ftp": "*",
         "ext-curl": "*"
